@@ -47,7 +47,7 @@ class snifferGui:
         context = engine.rootContext()
         context.setContextProperty('mainWindow', engine)  # the string can be anything
 
-        engine.load('/Users/hebingchang/QtCreator/sniffer/sniffer.qml')
+        engine.load('./qt-gui/sniffer.qml')
         self.root = engine.rootObjects()[0]
         self.root.setDevModel(pcap.findalldevs())
         self.root.initPieMenu()
