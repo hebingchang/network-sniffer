@@ -1,5 +1,6 @@
 bitstring==3.1.5
 dpkt==1.9.1
-pypcap==1.2.2
+-e git://github.com/hebingchang/pypcap#egg=pypcap
 PyQt5==5.11.3
 netaddr==0.7.19
+requests==2.20.1
