@@ -220,19 +220,19 @@ class Packet:
                             'value': '%s' % (self.ipHeader.flags.raw),
                             'children': [
                                 {
-                                    'label': 'Reserved bit',
+                                    'label': '保留位',
                                     'value': '%s | %s... .... .... ....' % (self.ipHeader.flags.reserved, int(self.ipHeader.flags.reserved))
                                 },
                                 {
-                                    'label': 'Reserved bit',
+                                    'label': 'Don\'t fragment' ,
                                     'value': '%s | .%s.. .... .... ....' % (self.ipHeader.flags.fragment, int(self.ipHeader.flags.fragment))
                                 },
                                 {
-                                    'label': 'Reserved bit',
+                                    'label': 'More fragments',
                                     'value': '%s | ..%s. .... .... ....' % (self.ipHeader.flags.more_fragment, int(self.ipHeader.flags.more_fragment))
                                 },
                                 {
-                                    'label': 'Reserved bit',
+                                    'label': '分段偏移',
                                     'value': '%s | ...%s' % (self.ipHeader.flags.fragment_offset, self.ipHeader.flags.fragment_offset_bin)
                                 }
                             ]
