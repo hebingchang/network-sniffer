@@ -7,18 +7,12 @@ from netaddr import *
 
 class ipFlag:
     def __init__(self, flag):
-        self.reversed = bool(flag[0] // 128)
-        self.fragment = bool((flag[0] // 64) % 2)
-        self.more_fragment = bool((flag[0] // 32) % 2)
-        self.fragment_offset = (flag[0] - self.reversed * 128 - self.fragment * 64 - self.more_fragment * 32) * 256 + flag[1]
-
-    def list(self):
-        return {
-            'reversed': self.reversed,
-            'fragment': self.fragment,
-            'more_fragment': self.more_fragment,
-            'fragment_offset': self.fragment_offset
-        }
+        self.raw = '0x' + flag.hex
+        self.reserved = flag[0]
+        self.fragment = flag[1]
+        self.more_fragment = flag[2]
+        self.fragment_offset = flag[3:16].uint
+        self.fragment_offset_bin = '%s %s %s %s' % (int(flag[3]), ''.join(flag[4:8].bin), ''.join(flag[8:12].bin), ''.join(flag[12:16].bin))
 
 class ethHeader:
     def __init__(self, buf):
@@ -41,28 +35,32 @@ class ipv4Header:
 
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.version = bits[0:4].int
-        self.header_length = bits[4:8].int * 4           # bytes
+        self.version = bits[0:4].uint
+        self.header_length = bits[4:8].uint * 4           # bytes
         self.source_ip = str(ipaddress.IPv4Address(bits[96:96 + 32].bytes))
         self.dest_ip = str(ipaddress.IPv4Address(bits[96 + 32:96 + 64].bytes))
         self.differentiated_services = bits[8:16].hex
-        self.total_length = bits[16:32].int    # bit
+        self.total_length = bits[16:32].uint    # bit
         self.identification = bits[32:48].hex
-        self.flags = ipFlag([buf[6], buf[7]]).list()
-        self.time_to_live = bits[64:72].int
-        self.protocol = consts.protocol_types[str(bits[72:80].int)]
+        self.identification_int = bits[32:48].uint
+        self.flags = ipFlag(bits[48:64])
+        self.time_to_live = bits[64:72].uint
+        self.protocol = consts.protocol_types[str(bits[72:80].uint)]
+        self.protocol_code = bits[72:80].uint
+        self.origin_checksum = bits[80:96].hex
         self.checksum = self.doChecksum(buf[0:(buf[0] % 16) * 4], buf[10:12])
 
 class arpBody:
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.hardware_type_code = bits[0:16].int
-        self.hardware_type = consts.arp_hardware_types[str(bits[0:16].int)]
+        self.hardware_type_code = bits[0:16].uint
+        self.hardware_type = consts.arp_hardware_types[str(bits[0:16].uint)]
         self.protocol_type_code = bits[16:32].hex
         self.protocol_type = consts.eth_types[str(bits[16:32].hex)]
-        self.hardware_size = bits[32:40]
-        self.protocol_size = bits[40:48]
-        self.operation_code = bits[48:64].int
+        self.hardware_size = bits[32:40].uint
+        self.protocol_size = bits[40:48].uint
+        self.operation = consts.arp_operation_codes[str(bits[48:64].uint)]
+        self.operation_code = bits[48:64].uint
         mac = EUI(bits[64:112].hex)
         mac.dialect = mac_unix_expanded
         self.sender_mac_address = str(mac)
@@ -70,18 +68,19 @@ class arpBody:
         mac = EUI(bits[144:192].hex)
         mac.dialect = mac_unix_expanded
         self.target_mac_address = str(mac)
-        self.sender_ip_address = str(ipaddress.IPv4Address(bits[192:224].bytes))
+        self.target_ip_address = str(ipaddress.IPv4Address(bits[192:224].bytes))
 
 
 class ipv6Header:
     def __init__(self, buf):
         bits = BitArray(buf)
         self.header_length = 40
+        self.version = bits[0:4].uint
         self._class = bits[4:12]
         self.float_label = bits[12:32]
         self.payload_length = bits[32:48]
-        self.next_header = consts.protocol_types[str(bits[48:56].int)]
-        self.protocol = consts.protocol_types[str(bits[48:56].int)]
+        self.next_header = consts.protocol_types[str(bits[48:56].uint)]
+        self.protocol = consts.protocol_types[str(bits[48:56].uint)]
 
         self.hop_limit = bits[56:64]
         self.source_ip = str(ipaddress.IPv6Address(bits[64:64 + 128].bytes))
@@ -112,37 +111,155 @@ class Packet:
             self.arpBody = arpBody(self.__ipData)
     
     def parse(self):
-        eth = dpkt.ethernet.Ethernet(self.pkt)
-        # print('Ethernet Frame: ', utils.mac_addr(eth.src), utils.mac_addr(eth.dst), eth.type)
+        data = [
+            {
+                'label': '以太网帧头部 / Ethernet Headers',
+                'value': '',
+                'bold': True,
+                'children': [
+                    {
+                        'label': '目的端 MAC 地址',
+                        'value': self.ethHeader.destMac
+                    },
+                    {
+                        'label': '发送端 MAC 地址',
+                        'value': self.ethHeader.sourceMac
+                    },
+                    {
+                        'label': '帧类型',
+                        'value': '%s (0x%s)' % (self.ethHeader.type, self.ethHeader.type_code)
+                    }
+                ]
+            }
+        ]
 
-        # Make sure the Ethernet frame contains an IP packet
-        if not isinstance(eth.data, dpkt.ip.IP):
-            print('Non IP Packet type not supported %s\n' % eth.data.__class__.__name__)
-            return ""
-        # Now unpack the data within the Ethernet frame (the IP packet)
-        # Pulling out src, dst, length, fragment info, TTL, and Protocol
-        ip = eth.data
+        if self.protocol == 'ARP':
+            data.append({
+                'label': 'ARP 消息 / Address Resolution Protocol',
+                'value': '',
+                'bold': True,
+                'children': [
+                    {
+                        'label': '硬件类型',
+                        'value': '%s (%s)' % (
+                        self.arpBody.hardware_type, self.arpBody.hardware_type_code)
+                    },
+                    {
+                        'label': '协议类型',
+                        'value': '%s (0x%s)' % (
+                        self.arpBody.protocol_type, self.arpBody.protocol_type_code)
+                    },
+                    {
+                        'label': '硬件地址长度',
+                        'value': str(self.arpBody.hardware_size)
+                    },
+                    {
+                        'label': '协议地址长度',
+                        'value': str(self.arpBody.protocol_size)
+                    },
+                    {
+                        'label': '操作码',
+                        'value': '%s (%s)' % (self.arpBody.operation, self.arpBody.operation_code)
+                    },
+                    {
+                        'label': '发送端 MAC 地址',
+                        'value': self.arpBody.sender_mac_address
+                    },
+                    {
+                        'label': '发送端 IP 地址',
+                        'value': self.arpBody.sender_ip_address
+                    },
+                    {
+                        'label': '目的端 MAC 地址',
+                        'value': self.arpBody.target_mac_address
+                    },
+                    {
+                        'label': '目的端 IP 地址',
+                        'value': self.arpBody.target_ip_address
+                    }
+                ]
+            })
+        else:
 
-        # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
-        do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
-        more_fragments = bool(ip.off & dpkt.ip.IP_MF)
-        fragment_offset = ip.off & dpkt.ip.IP_OFFMASK
+            if self.ipHeader.version == 4:
+                data.append({
+                    'label': 'IPv4 头部 / IPv4 Header',
+                    'value': '',
+                    'bold': True,
+                    'children': [
+                        {
+                            'label': '协议版本',
+                            'value':  self.ipHeader.version
+                        },
+                        {
+                            'label': '头部长度',
+                            'value': str(self.ipHeader.header_length) + ' Bytes'
+                        },
+                        {
+                            'label': '服务类型',
+                            'value': '0x%s' % (self.ipHeader.differentiated_services)
+                        },
+                        {
+                            'label': '来源 IP',
+                            'value': self.ipHeader.source_ip
+                        },
+                        {
+                            'label': '目标 IP',
+                            'value': self.ipHeader.dest_ip
+                        },
+                        {
+                            'label': '总长度',
+                            'value': self.ipHeader.total_length
+                        },
+                        {
+                            'label': '标识',
+                            'value': '0x%s (%s)' % (self.ipHeader.identification, self.ipHeader.identification_int)
+                        },
+                        {
+                            'label': '标志',
+                            'value': '%s' % (self.ipHeader.flags.raw),
+                            'children': [
+                                {
+                                    'label': 'Reserved bit',
+                                    'value': '%s | %s... .... .... ....' % (self.ipHeader.flags.reserved, int(self.ipHeader.flags.reserved))
+                                },
+                                {
+                                    'label': 'Reserved bit',
+                                    'value': '%s | .%s.. .... .... ....' % (self.ipHeader.flags.fragment, int(self.ipHeader.flags.fragment))
+                                },
+                                {
+                                    'label': 'Reserved bit',
+                                    'value': '%s | ..%s. .... .... ....' % (self.ipHeader.flags.more_fragment, int(self.ipHeader.flags.more_fragment))
+                                },
+                                {
+                                    'label': 'Reserved bit',
+                                    'value': '%s | ...%s' % (self.ipHeader.flags.fragment_offset, self.ipHeader.flags.fragment_offset_bin)
+                                }
+                            ]
+                        },
+                        {
+                            'label': '生存期',
+                            'value': self.ipHeader.time_to_live
+                        },
+                        {
+                            'label': '协议',
+                            'value': '%s (%s)' % (self.ipHeader.protocol, self.ipHeader.protocol_code)
+                        },
+                        {
+                            'label': '校验和',
+                            'value': '0x%s (%s)' % (self.ipHeader.origin_checksum, '校验' + {True: '通过', False: '失败'}[self.ipHeader.checksum])
+                        }
+                    ]
+                })
 
-        # Print out the info
-        # return 'IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' % \
-        #        (utils.inet_to_str(ip.src), utils.inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments,
-        #         fragment_offset)
-        return {
-            'source': utils.inet_to_str(ip.src),
-            'destination': utils.inet_to_str(ip.dst),
-            'length': ip.len
-        }
+        return data
 
     def __str__(self):
         hex_string = ""
         for dig in self.pkt:
             hex_string += '{:02x} '.format(dig)
         return hex_string
+
 '''
 sniffer = pcap.pcap(name=None, promisc=True, immediate=True, timeout_ms=50)
 addr = lambda pkt, offset: '.'.join(str(pkt[i]) for i in range(offset, offset + 4))

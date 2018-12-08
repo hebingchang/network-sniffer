@@ -2,16 +2,18 @@ import time
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine, QQmlProperty
-from PyQt5.QtCore import QUrl, QObject, pyqtSlot, QRunnable, QThreadPool, QAbstractListModel, QThread, pyqtSignal
+from PyQt5.QtCore import QUrl, QObject, pyqtSlot, QRunnable, QThreadPool, QAbstractListModel, QThread, pyqtSignal, \
+    QVariant
 
 import pcap, sys
 import network_sniffer
 import queue
+import json
 
 #somewhere accessible to both:
 callback_queue = queue.Queue()
-
 listening = False
+packets = list()
 
 class SnifferThread(QThread):
     signal = pyqtSignal('PyQt_PyObject')
@@ -38,7 +40,17 @@ class SnifferThread(QThread):
                 'length': packet.length
             }
             print(data)
-            self.signal.emit(data)
+            self.signal.emit((data, packet))
+
+class parseController(QObject):
+    def __init__(self, *args, **kwags):
+        QObject.__init__(self, *args, **kwags)
+
+    @pyqtSlot(int, result=str)
+    def onItemChange(self, index):
+        data = packets[index].parse()
+        return json.dumps(data)
+
 
 class snifferGui:
     def __init__(self, argv):
@@ -46,8 +58,11 @@ class snifferGui:
         engine = QQmlApplicationEngine()
         context = engine.rootContext()
         context.setContextProperty('mainWindow', engine)  # the string can be anything
-
         engine.load('./qt-gui/sniffer.qml')
+
+        parse = parseController()
+        context.setContextProperty('parse', parse)
+
         self.root = engine.rootObjects()[0]
         self.root.setDevModel(pcap.findalldevs())
         self.root.initPieMenu()
@@ -68,6 +83,8 @@ class snifferGui:
         self.comboDev = self.root.findChild(QObject, "comboDevice")
         self.comboDev.activated.connect(self.getDev)
 
+        packets = list()
+
         engine.quit.connect(app.quit)
         sys.exit(app.exec_())
 
@@ -78,12 +95,14 @@ class snifferGui:
             self.sniffer_thread.terminate()
         else:
             self.sniffer_status = True
+            packets = list()
             self.root.startSnifferAction()
-            self.sniffer_thread.dev = self.dev  # Get the git URL
+            self.sniffer_thread.dev = self.dev
             self.sniffer_thread.start()  # Finally starts the thread
 
     def addItem(self, data):
-        self.root.appendPacketModel(data)
+        packets.append(data[1])
+        self.root.appendPacketModel(data[0])
 
     def getDev(self, index):
         self.dev = pcap.findalldevs()[index]

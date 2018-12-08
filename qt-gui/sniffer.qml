@@ -34,6 +34,14 @@ Window {
         btnRefresh.visible = true
     }
 
+    function changeItem (index) {
+        var data = JSON.parse(parse.onItemChange(index))
+
+        parseAccordion.model = data
+
+        packetList.currentIndex = index
+    }
+
     id: mainWindow
     objectName: "mainWindow"
     visible: true
@@ -164,7 +172,9 @@ Window {
             height: 20
             MouseArea {
                 anchors.fill: parent
-                onClicked: packetList.currentIndex = index
+                onClicked: {
+                    changeItem(index)
+                }
             }
             Row {
                 id: row1
@@ -217,7 +227,7 @@ Window {
         }
         model: ListModel {
             id: packetModel
-            objectName: "comboDevice"
+            objectName: "packetModel"
         }
     }
 
@@ -267,7 +277,7 @@ Window {
     GroupBox {
         id: groupPacket
         y: 42
-        height: 0.45 * mainWindow.height
+        height: 0.42 * mainWindow.height
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.left: parent.left
@@ -278,7 +288,8 @@ Window {
     RoundButton {
         id: btnMenu
         x: 448
-        y: 448
+        y: 442
+        z: 999
         text: "+"
         rightPadding: 0
         leftPadding: 0
@@ -286,15 +297,39 @@ Window {
         topPadding: 0
         font.pointSize: 26
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 12
+        anchors.bottomMargin: 18
         anchors.right: parent.right
         anchors.rightMargin: 12
 
         onClicked: pieMenu.popup(mouseX, mouseY)
     }
+
+    GroupBox {
+        id: groupParse
+        y: 255
+        height: mainWindow.height - groupPacket.height - 60
+        anchors.right: parent.right
+        anchors.rightMargin: 8
+        anchors.left: parent.left
+        anchors.leftMargin: 8
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 13
+        title: qsTr("报文解析")
+
+        Accordion {
+            anchors.rightMargin: 0
+            anchors.bottomMargin: 0
+            anchors.leftMargin: -12
+            anchors.topMargin: 0
+            anchors.fill: parent
+            anchors.margins: 10
+            id: parseAccordion
+        }
+    }
 }
 
 /*##^## Designer {
     D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:221;anchors_width:473;anchors_x:6;anchors_y:33}
+D{i:119;anchors_height:181;anchors_width:460;anchors_x:0;anchors_y:0}
 }
  ##^##*/
