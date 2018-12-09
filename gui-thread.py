@@ -9,6 +9,8 @@ import pcap, sys
 import network_sniffer
 import queue
 import json
+import os
+import netifaces, psutil
 
 #somewhere accessible to both:
 callback_queue = queue.Queue()
@@ -63,10 +65,16 @@ class snifferGui:
         parse = parseController()
         context.setContextProperty('parse', parse)
 
+        if os.name == 'nt':
+            self.devs_name = list(psutil.net_if_addrs().keys())
+            self.devs = ['\\\\Device\\\\NPF_' + x for x in netifaces.interfaces()]
+        else:
+            self.devs_name = self.devs = pcap.findalldevs()
+
         self.root = engine.rootObjects()[0]
-        self.root.setDevModel(pcap.findalldevs())
+        self.root.setDevModel(self.devs_name)
         self.root.initPieMenu()
-        self.dev = pcap.findalldevs()[0]
+        self.dev = self.devs[0]
         self.sniffer_status = False
 
         # self.root.appendPacketModel({'source': '10.162.31.142', 'destination': '151.101.74.49', 'length': 52, 'id': 1})
@@ -105,7 +113,7 @@ class snifferGui:
         self.root.appendPacketModel(data[0])
 
     def getDev(self, index):
-        self.dev = pcap.findalldevs()[index]
+        self.dev = self.devs[index]
 
 
 def startGui():
