@@ -76,15 +76,28 @@ class ipv6Header:
         bits = BitArray(buf)
         self.header_length = 40
         self.version = bits[0:4].uint
-        self._class = bits[4:12]
-        self.float_label = bits[12:32]
-        self.payload_length = bits[32:48]
+        self._class = bits[4:12].hex
+        self.float_label = bits[12:32].hex
+        self.payload_length = bits[32:48].uint
         self.next_header = consts.protocol_types[str(bits[48:56].uint)]
         self.protocol = consts.protocol_types[str(bits[48:56].uint)]
+        self.next_header_code = bits[48:56].uint
 
-        self.hop_limit = bits[56:64]
+        self.hop_limit = bits[56:64].uint
         self.source_ip = str(ipaddress.IPv6Address(bits[64:64 + 128].bytes))
         self.dest_ip = str(ipaddress.IPv6Address(bits[64 + 128:64 + 256].bytes))
+
+        self.options = []
+        next_header = self.next_header_code
+        offset = 320
+        while next_header in [0, 60, 43, 44, 51, 50, 60, 135, 59]:
+            self.options.append({
+                'code': next_header,
+                'next_header': bits[offset:offset+8].uint,
+                'value': bits[offset:offset+64].hex
+            })
+            next_header = bits[offset:offset+8].uint
+            offset += 64
 
 class ipBody:
     def __init__(self, buf, protocol):
@@ -93,7 +106,7 @@ class ipBody:
 
 class tcpFlag:
     def __init__(self, buf):
-        self.reserved = buf[0:3].int
+        self.reserved = buf[0:3].uint
         self.nonce = buf[4]
         self.cwr = buf[5]
         self.ecn_echo = buf[6]
@@ -103,18 +116,27 @@ class tcpFlag:
         self.syn = buf[10]
         self.fin = buf[11]
 
+class tcpOptions:
+    def __init__(self, buf):
+        self.options = []
+        offset = 0
+        while buf[offset:offset+8].uint != 0:
+            option = {'kind': buf[offset:offset+8].uint}
+
+
 class tcpHeader:
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.source_port = bits[0:16].int
-        self.destination_port = bits[16:32].int
-        self.sequence_number = bits[32:64].int
-        self.acknowledge_number = bits[64:96].int
-        self.header_length = bits[96:100].int * 4           # bytes
+        self.source_port = bits[0:16].uint
+        self.destination_port = bits[16:32].uint
+        self.sequence_number = bits[32:64].uint
+        self.acknowledge_number = bits[64:96].uint
+        self.header_length = bits[96:100].uint * 4           # bytes
         self.flags = tcpFlag(bits[100:112])
-        self.window_size = bits[112:128].int
+        self.window_size = bits[112:128].uint
         self.checksum = bits[128:144].hex
-        self.urgent_pointer = bits[144:160].int
+        self.urgent_pointer = bits[144:160].uint
+        # self.options = tcpOptions(bits[160:self.header_length*8])
 
 class Packet:
     def __init__(self, sniffer, pkt, id):
@@ -284,6 +306,62 @@ class Packet:
                         }
                     ]
                 })
+
+            else:
+                ipv6_header = {
+                    'label': 'IPv6 头部 / IPv6 Header',
+                    'value': '',
+                    'bold': True,
+                    'children': [
+                        {
+                            'label': '协议版本',
+                            'value': self.ipHeader.version
+                        },
+                        {
+                            'label': '通信分类',
+                            'value': '0x%s' % (self.ipHeader._class)
+                        },
+                        {
+                            'label': '流标签',
+                            'value': '0x%s' % (self.ipHeader.float_label)
+                        },
+                        {
+                            'label': '有效载荷长度',
+                            'value': self.ipHeader.payload_length
+                        },
+                        {
+                            'label': '下一头部类型',
+                            'value': '%s (%s)' % (self.ipHeader.next_header, self.ipHeader.next_header_code)
+                        },
+                        {
+                            'label': '跳数限制',
+                            'value': self.ipHeader.hop_limit
+                        },
+                        {
+                            'label': '源 IP',
+                            'value': self.ipHeader.source_ip
+                        },
+                        {
+                            'label': '目的 IP',
+                            'value': self.ipHeader.dest_ip
+                        }
+                    ]
+                }
+
+                for option in self.ipHeader.options:
+                    ipv6_header['children'].append(
+                        {
+                            'label': consts.protocol_types[str(option['label'])],
+                            'value': '0x' + option['value'],
+                            'children': {
+                                'label': '下一头部类型',
+                                'value': '%s (%s)' % (consts.protocol_types[option['next_header']], option['next_header'])
+                            }
+                        }
+                    )
+
+                data.append(ipv6_header)
+
 
         return data
 
