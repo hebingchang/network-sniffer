@@ -75,7 +75,7 @@ Column {
                 }
 
                 Text {
-                    font.pointSize: 12
+                    font.pointSize: 13
                     visible: infoRow.visible
 
                     color: 'black'

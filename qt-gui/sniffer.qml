@@ -45,29 +45,28 @@ Window {
     id: mainWindow
     objectName: "mainWindow"
     visible: true
-    width: 500
+    width: 600
     height: 500
     title: qsTr("Sniffer")
 
     Text {
         id: lblDevice
-        x: 15
+        x: 12
         y: 11
         text: qsTr("选择网卡:")
-        font.pixelSize: 12
     }
 
     Button {
         id: btnStart
         objectName: "btnStart"
-        x: 343
-        y: 8
-        width: 67
-        height: 22
+        x: 394
+        y: 5
+        width: 81
+        height: 27
         text: qsTr("开始抓包")
         anchors.right: parent.right
-        anchors.rightMargin: 90
-        font.pointSize: 11
+        anchors.rightMargin: 125
+        font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
     }
@@ -80,7 +79,7 @@ Window {
         anchors.left: parent.left
         anchors.leftMargin: 73
         anchors.right: parent.right
-        anchors.rightMargin: 168
+        anchors.rightMargin: 212
         model: ListModel {
             id: devices
         }
@@ -88,14 +87,14 @@ Window {
 
     Button {
         id: btnRefresh
-        x: 421
-        y: 8
-        width: 67
-        height: 22
+        x: 481
+        y: 5
+        width: 81
+        height: 27
         text: qsTr("刷新网卡")
         anchors.right: parent.right
-        anchors.rightMargin: 12
-        font.pointSize: 11
+        anchors.rightMargin: 38
+        font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
         onClicked: {
@@ -105,15 +104,16 @@ Window {
 
     ListView {
         id: packetList
-        parent: groupPacket
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 10
-        anchors.top: parent.top
-        anchors.topMargin: 33
+        height: 172
         anchors.right: parent.right
-        anchors.rightMargin: 15
+        anchors.rightMargin: 20
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: 6
+        anchors.top: parent.top
+        anchors.topMargin: 32
+        anchors.verticalCenterOffset: 13
+        anchors.verticalCenter: groupPacket.verticalCenter
+        parent: groupPacket
         highlightRangeMode: ListView.NoHighlightRange
         ScrollBar.vertical: ScrollBar {}
         headerPositioning: ListView.OverlayHeader
@@ -137,6 +137,7 @@ Window {
                   text: '#'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
+                  font.pointSize: 13
                   width: 30
               }
               spacing: 10
@@ -144,24 +145,28 @@ Window {
                   text: '源地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
+                  font.pointSize: 13
                   width: 160
               }
               Text {
                   text: '目的地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
+                  font.pointSize: 13
                   width: 160
               }
               Text {
                   text: '协议'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
+                  font.pointSize: 13
                   width: 80
               }
               Text {
                   text: '长度'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
+                  font.pointSize: 13
                   width: 50
               }
           }
@@ -184,6 +189,7 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
+                    font.pointSize: 13
                     width: 30
                 }
                 spacing: 10
@@ -193,6 +199,7 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
+                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 160
                 }
@@ -202,6 +209,7 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
+                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 160
                 }
@@ -211,6 +219,7 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
+                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 80
                 }
@@ -220,6 +229,7 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
+                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 50
                 }
@@ -289,8 +299,8 @@ Window {
         id: btnMenu
         x: 448
         y: 442
+        text: qsTr("")
         z: 999
-        text: "+"
         rightPadding: 0
         leftPadding: 0
         bottomPadding: 5
@@ -300,6 +310,15 @@ Window {
         anchors.bottomMargin: 18
         anchors.right: parent.right
         anchors.rightMargin: 12
+
+        Image {
+            id: plusImage
+            width: parent.width / 2.5
+            height: parent.height / 2.5
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            source: 'images/plus.svg'
+        }
 
         onClicked: pieMenu.popup(mouseX, mouseY)
     }
@@ -329,7 +348,6 @@ Window {
 }
 
 /*##^## Designer {
-    D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:221;anchors_width:473;anchors_x:6;anchors_y:33}
-D{i:119;anchors_height:181;anchors_width:460;anchors_x:0;anchors_y:0}
+    D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:172;anchors_width:573;anchors_x:6;anchors_y:33}
 }
  ##^##*/
