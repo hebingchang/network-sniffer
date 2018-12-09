@@ -86,6 +86,36 @@ class ipv6Header:
         self.source_ip = str(ipaddress.IPv6Address(bits[64:64 + 128].bytes))
         self.dest_ip = str(ipaddress.IPv6Address(bits[64 + 128:64 + 256].bytes))
 
+class ipBody:
+    def __init__(self, buf, protocol):
+        if protocol == 'TCP':                # TCP
+            self.tcpHeader = tcpHeader(buf)
+
+class tcpFlag:
+    def __init__(self, buf):
+        self.reserved = buf[0:3].int
+        self.nonce = buf[4]
+        self.cwr = buf[5]
+        self.ecn_echo = buf[6]
+        self.acknowledgement = buf[7]
+        self.push = buf[8]
+        self.reset = buf[9]
+        self.syn = buf[10]
+        self.fin = buf[11]
+
+class tcpHeader:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.source_port = bits[0:16].int
+        self.destination_port = bits[16:32].int
+        self.sequence_number = bits[32:64].int
+        self.acknowledge_number = bits[64:96].int
+        self.header_length = bits[96:100].int * 4           # bytes
+        self.flags = tcpFlag(bits[100:112])
+        self.window_size = bits[112:128].int
+        self.checksum = bits[128:144].hex
+        self.urgent_pointer = bits[144:160].int
+
 class Packet:
     def __init__(self, sniffer, pkt, id):
         self.id = id
@@ -105,6 +135,9 @@ class Packet:
                 self.ipHeader = ipv6Header(self.__ipData)
 
             self.source, self.destination, self.protocol = self.ipHeader.source_ip, self.ipHeader.dest_ip, self.ipHeader.protocol
+
+            self.ipBody = ipBody(self.__ipData[self.ipHeader.header_length:], self.ipHeader.protocol)
+
         elif self.ethHeader.type_code == '0806':                    # ARP
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac
             self.protocol = 'ARP'

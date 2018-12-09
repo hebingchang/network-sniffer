@@ -23,6 +23,11 @@ def updateConsts():
     f.write(r.content)
     f.close()
 
+    r = requests.get('https://www.iana.org/assignments/tcp-parameters/tcp-parameters-1.csv')  # TCP 头部选项
+    f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/tcp-parameters-1.csv', 'wb')
+    f.write(r.content)
+    f.close()
+
 eth_types = dict()
 with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/ieee-802-numbers.csv', 'r') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',')
@@ -55,3 +60,14 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/arp-para
     next(csvreader)
     for row in csvreader:
         arp_hardware_types[row[0]] = row[1]
+
+
+tcp_options = dict()
+with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/tcp-parameters-1.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',')
+    next(csvreader)
+    for row in csvreader:
+        tcp_options[row[0]] = {
+            'length': row[1],
+            'meaning': row[2]
+        }

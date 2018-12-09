@@ -45,7 +45,7 @@ Window {
     id: mainWindow
     objectName: "mainWindow"
     visible: true
-    width: 600
+    width: 585
     height: 500
     title: qsTr("Sniffer")
 
@@ -59,13 +59,13 @@ Window {
     Button {
         id: btnStart
         objectName: "btnStart"
-        x: 394
-        y: 5
+        x: 409
+        y: 6
         width: 81
         height: 27
         text: qsTr("开始抓包")
         anchors.right: parent.right
-        anchors.rightMargin: 125
+        anchors.rightMargin: 95
         font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
@@ -79,7 +79,7 @@ Window {
         anchors.left: parent.left
         anchors.leftMargin: 73
         anchors.right: parent.right
-        anchors.rightMargin: 212
+        anchors.rightMargin: 182
         model: ListModel {
             id: devices
         }
@@ -87,13 +87,13 @@ Window {
 
     Button {
         id: btnRefresh
-        x: 481
-        y: 5
+        x: 496
+        y: 6
         width: 81
         height: 27
         text: qsTr("刷新网卡")
         anchors.right: parent.right
-        anchors.rightMargin: 38
+        anchors.rightMargin: 8
         font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
@@ -137,7 +137,7 @@ Window {
                   text: '#'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 13
+                  font.pointSize: 12
                   width: 30
               }
               spacing: 10
@@ -145,28 +145,28 @@ Window {
                   text: '源地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 13
+                  font.pointSize: 12
                   width: 160
               }
               Text {
                   text: '目的地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 13
+                  font.pointSize: 12
                   width: 160
               }
               Text {
                   text: '协议'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 13
+                  font.pointSize: 12
                   width: 80
               }
               Text {
                   text: '长度'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 13
+                  font.pointSize: 12
                   width: 50
               }
           }
@@ -189,7 +189,7 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
-                    font.pointSize: 13
+                    font.pointSize: 12
                     width: 30
                 }
                 spacing: 10
@@ -243,8 +243,8 @@ Window {
 
     Label {
         id: lblSniffering
-        x: 112
-        y: 43
+        x: 525
+        y: 42
         width: 67
         height: 16
         color: "#f04444"
@@ -252,7 +252,7 @@ Window {
         verticalAlignment: Text.AlignVCenter
         visible: false
         anchors.right: parent.right
-        anchors.rightMargin: 321
+        anchors.rightMargin: 8
         NumberAnimation on opacity {
             id: animationIn
             to: 1
@@ -278,6 +278,7 @@ Window {
 
     MouseArea {
         id: mouseArea
+        anchors.rightMargin: 32
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
 
