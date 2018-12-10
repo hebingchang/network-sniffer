@@ -121,10 +121,20 @@ class ipv6Header:
             next_header = bits[offset:offset+8].uint
             offset += 64
 
+class icmpHeader:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.type = bits[0:8].uint
+        self.type_name = consts.icmp_types[str(bits[0:8].uint)]
+        self.code = bits[8:16].uint
+        self.checksum = bits[16:32].hex
+
 class ipBody:
     def __init__(self, buf, protocol):
         if protocol == 'TCP':                # TCP
             self.tcpHeader = tcpHeader(buf)
+        elif 'ICMP' in protocol:
+            self.icmpHeader = icmpHeader(buf)
 
 class tcpFlag:
     def __init__(self, buf):
@@ -399,101 +409,133 @@ class Packet:
 
                 data.append(ipv6_header)
 
-            if self.ipHeader.protocol == 'TCP':
-
-                data.append({
-                    'label': 'TCP 头部 / Transmission Control Protocol Header',
-                    'value': '',
+            if self.ipHeader.version == 4 and self.ipHeader.flags.more_fragment == True:
+                print('Waiting for more fragments.')
+                ids = self.ip_ids[self.ipHeader.identification_int]
+                slicing = {
+                    'label': 'IP 分片',
+                    'value': '共 %s 个数据包' % len(ids),
                     'bold': True,
-                    'children': [
-                        {
-                            'label': '源端口',
-                            'value': self.ipBody.tcpHeader.source_port
-                        },
-                        {
-                            'label': '目的端口',
-                            'value': self.ipBody.tcpHeader.destination_port
-                        },
-                        {
-                            'label': '数据序号 (seq)',
-                            'value': self.ipBody.tcpHeader.sequence_number
-                        },
-                        {
-                            'label': '确认序号 (ack)',
-                            'value': self.ipBody.tcpHeader.acknowledge_number
-                        },
-                        {
-                            'label': '首部长度',
-                            'value': self.ipBody.tcpHeader.header_length
-                        },
-                        {
-                            'label': '标志位',
-                            'value': '0x' + self.ipBody.tcpHeader.flags_raw,
-                            'children': [
-                                {
-                                    'label': 'Reserved',
-                                    'value': '%s | %s. .... ....' % (
-                                    self.ipBody.tcpHeader.flags.reserved.uint, self.ipBody.tcpHeader.flags.reserved.bin)
-                                },
-                                {
-                                    'label': 'Nonce',
-                                    'value': '%s | ...%d .... ....' % (
-                                        self.ipBody.tcpHeader.flags.nonce, self.ipBody.tcpHeader.flags.nonce)
-                                },
-                                {
-                                    'label': 'Congestion Window Reduced',
-                                    'value': '%s | .... %d... ....' % (
-                                        self.ipBody.tcpHeader.flags.cwr, self.ipBody.tcpHeader.flags.cwr)
-                                },
-                                {
-                                    'label': 'ECN-Echo',
-                                    'value': '%s | .... .%d.. ....' % (
-                                        self.ipBody.tcpHeader.flags.ecn_echo,
-                                        self.ipBody.tcpHeader.flags.ecn_echo)
-                                },
-                                {
-                                    'label': 'Urgent',
-                                    'value': '%s | .... ..%d. ....' % (
-                                        self.ipBody.tcpHeader.flags.urgent, self.ipBody.tcpHeader.flags.urgent)
-                                },
-                                {
-                                    'label': 'Acknowledgment',
-                                    'value': '%s | .... ...%d ....' % (
-                                        self.ipBody.tcpHeader.flags.acknowledgement,
-                                        self.ipBody.tcpHeader.flags.acknowledgement)
-                                },
-                                {
-                                    'label': 'Push',
-                                    'value': '%s | .... .... %d...' % (
-                                        self.ipBody.tcpHeader.flags.push, self.ipBody.tcpHeader.flags.push)
-                                },
-                                {
-                                    'label': 'Reset',
-                                    'value': '%s | .... .... .%d..' % (
-                                        self.ipBody.tcpHeader.flags.reset, self.ipBody.tcpHeader.flags.reset)
-                                },
-                                {
-                                    'label': 'Syn',
-                                    'value': '%s | .... .... ..%d.' % (
-                                        self.ipBody.tcpHeader.flags.syn, self.ipBody.tcpHeader.flags.syn)
-                                },
-                                {
-                                    'label': 'Fin',
-                                    'value': '%s | .... .... ...%d' % (
-                                        self.ipBody.tcpHeader.flags.fin, self.ipBody.tcpHeader.flags.fin)
-                                }
-                            ]
-                        },
-                        {
-                            'label': '窗口大小',
-                            'value': self.ipBody.tcpHeader.window_size
-                        },
-                        {
+                    'children': []
+                }
+                for id in ids:
+                    slicing['children'].append({
+                        'label': '#%s' % id,
+                        'value': '%s Bytes' % (self.ip_packets[id].length / 8)
+                    })
+                data.append(slicing)
+            else:
+                if self.ipHeader.protocol == 'TCP':
+                    data.append({
+                        'label': 'TCP 头部 / Transmission Control Protocol Header',
+                        'value': '',
+                        'bold': True,
+                        'children': [
+                            {
+                                'label': '源端口',
+                                'value': self.ipBody.tcpHeader.source_port
+                            },
+                            {
+                                'label': '目的端口',
+                                'value': self.ipBody.tcpHeader.destination_port
+                            },
+                            {
+                                'label': '数据序号 (seq)',
+                                'value': self.ipBody.tcpHeader.sequence_number
+                            },
+                            {
+                                'label': '确认序号 (ack)',
+                                'value': self.ipBody.tcpHeader.acknowledge_number
+                            },
+                            {
+                                'label': '首部长度',
+                                'value': self.ipBody.tcpHeader.header_length
+                            },
+                            {
+                                'label': '标志位',
+                                'value': '0x' + self.ipBody.tcpHeader.flags_raw,
+                                'children': [
+                                    {
+                                        'label': 'Reserved',
+                                        'value': '%s | %s. .... ....' % (
+                                        self.ipBody.tcpHeader.flags.reserved.uint, self.ipBody.tcpHeader.flags.reserved.bin)
+                                    },
+                                    {
+                                        'label': 'Nonce',
+                                        'value': '%s | ...%d .... ....' % (
+                                            self.ipBody.tcpHeader.flags.nonce, self.ipBody.tcpHeader.flags.nonce)
+                                    },
+                                    {
+                                        'label': 'Congestion Window Reduced',
+                                        'value': '%s | .... %d... ....' % (
+                                            self.ipBody.tcpHeader.flags.cwr, self.ipBody.tcpHeader.flags.cwr)
+                                    },
+                                    {
+                                        'label': 'ECN-Echo',
+                                        'value': '%s | .... .%d.. ....' % (
+                                            self.ipBody.tcpHeader.flags.ecn_echo,
+                                            self.ipBody.tcpHeader.flags.ecn_echo)
+                                    },
+                                    {
+                                        'label': 'Urgent',
+                                        'value': '%s | .... ..%d. ....' % (
+                                            self.ipBody.tcpHeader.flags.urgent, self.ipBody.tcpHeader.flags.urgent)
+                                    },
+                                    {
+                                        'label': 'Acknowledgment',
+                                        'value': '%s | .... ...%d ....' % (
+                                            self.ipBody.tcpHeader.flags.acknowledgement,
+                                            self.ipBody.tcpHeader.flags.acknowledgement)
+                                    },
+                                    {
+                                        'label': 'Push',
+                                        'value': '%s | .... .... %d...' % (
+                                            self.ipBody.tcpHeader.flags.push, self.ipBody.tcpHeader.flags.push)
+                                    },
+                                    {
+                                        'label': 'Reset',
+                                        'value': '%s | .... .... .%d..' % (
+                                            self.ipBody.tcpHeader.flags.reset, self.ipBody.tcpHeader.flags.reset)
+                                    },
+                                    {
+                                        'label': 'Syn',
+                                        'value': '%s | .... .... ..%d.' % (
+                                            self.ipBody.tcpHeader.flags.syn, self.ipBody.tcpHeader.flags.syn)
+                                    },
+                                    {
+                                        'label': 'Fin',
+                                        'value': '%s | .... .... ...%d' % (
+                                            self.ipBody.tcpHeader.flags.fin, self.ipBody.tcpHeader.flags.fin)
+                                    }
+                                ]
+                            },
+                            {
+                                'label': '窗口大小',
+                                'value': self.ipBody.tcpHeader.window_size
+                            },
+                            {
+                                'label': '校验和',
+                                'value': '0x' + self.ipBody.tcpHeader.checksum
+                            }
+                        ]
+                    })
+
+                elif 'ICMP' in self.ipHeader.protocol:
+                    data.append({
+                        'label': 'ICMP 头部 / Internet Control Message Protocol Headers',
+                        'value': '',
+                        'bold': True,
+                        'children': [{
+                            'label': '类型',
+                            'value': '%s (%s)' % (self.ipBody.icmpHeader.type, self.ipBody.icmpHeader.type_name)
+                        }, {
+                            'label': '代码',
+                            'value': self.ipBody.icmpHeader.code
+                        }, {
                             'label': '校验和',
-                            'value': '0x' + self.ipBody.tcpHeader.checksum
-                        }
-                    ]
-                })
+                            'value': '0x%s' % self.ipBody.icmpHeader.checksum
+                        }]
+                    })
 
         return data
 

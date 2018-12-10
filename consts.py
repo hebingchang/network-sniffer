@@ -29,6 +29,11 @@ def updateConsts():
     f.write(r.content)
     f.close()
 
+    r = requests.get('https://www.iana.org/assignments/icmp-parameters/icmp-parameters-types.csv')  # ICMP 类型
+    f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/icmp-parameters-types.csv', 'wb')
+    f.write(r.content)
+    f.close()
+
 eth_types = dict()
 with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/ieee-802-numbers.csv', 'r') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',')
@@ -110,3 +115,15 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/tcp-para
             'meaning': row[2],
             'params': params
         }
+
+icmp_types = dict()
+with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/icmp-parameters-types.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',')
+    next(csvreader)
+    for row in csvreader:
+        key = row[0].split('-')
+        if len(key) == 1:
+            icmp_types[row[0]] = row[1]
+        else:
+            for idx in range(int(key[0]), int(key[1]) + 1):
+                icmp_types[str(idx)] = row[1]
