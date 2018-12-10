@@ -104,18 +104,10 @@ Window {
 
     ListView {
         id: packetList
+        x: 7
+        y: 32
+        width: 771
         height: 172
-        anchors.bottom: groupPacket.top
-        anchors.bottomMargin: -171
-        anchors.horizontalCenter: groupPacket.horizontalCenter
-        anchors.right: parent.right
-        anchors.rightMargin: 20
-        anchors.left: parent.left
-        anchors.leftMargin: 6
-        anchors.top: parent.top
-        anchors.topMargin: 32
-        anchors.verticalCenterOffset: 13
-        anchors.verticalCenter: groupPacket.verticalCenter
         parent: groupPacket
         highlightRangeMode: ListView.NoHighlightRange
         ScrollBar.vertical: ScrollBar {}

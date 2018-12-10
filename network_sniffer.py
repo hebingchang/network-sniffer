@@ -106,10 +106,11 @@ class ipBody:
 
 class tcpFlag:
     def __init__(self, buf):
-        self.reserved = buf[0:3].uint
-        self.nonce = buf[4]
-        self.cwr = buf[5]
-        self.ecn_echo = buf[6]
+        self.reserved = buf[0:3]
+        self.nonce = buf[3]
+        self.cwr = buf[4]
+        self.ecn_echo = buf[5]
+        self.urgent = buf[6]
         self.acknowledgement = buf[7]
         self.push = buf[8]
         self.reset = buf[9]
@@ -133,6 +134,7 @@ class tcpHeader:
         self.acknowledge_number = bits[64:96].uint
         self.header_length = bits[96:100].uint * 4           # bytes
         self.flags = tcpFlag(bits[100:112])
+        self.flags_raw = bits[100:112].hex
         self.window_size = bits[112:128].uint
         self.checksum = bits[128:144].hex
         self.urgent_pointer = bits[144:160].uint
@@ -362,6 +364,101 @@ class Packet:
 
                 data.append(ipv6_header)
 
+            if self.ipHeader.protocol == 'TCP':
+
+                data.append({
+                    'label': 'TCP 头部 / Transmission Control Protocol Header',
+                    'value': '',
+                    'bold': True,
+                    'children': [
+                        {
+                            'label': '源端口',
+                            'value': self.ipBody.tcpHeader.source_port
+                        },
+                        {
+                            'label': '目的端口',
+                            'value': self.ipBody.tcpHeader.destination_port
+                        },
+                        {
+                            'label': '数据序号 (seq)',
+                            'value': self.ipBody.tcpHeader.sequence_number
+                        },
+                        {
+                            'label': '确认序号 (ack)',
+                            'value': self.ipBody.tcpHeader.acknowledge_number
+                        },
+                        {
+                            'label': '首部长度',
+                            'value': self.ipBody.tcpHeader.header_length
+                        },
+                        {
+                            'label': '标志位',
+                            'value': '0x' + self.ipBody.tcpHeader.flags_raw,
+                            'children': [
+                                {
+                                    'label': 'Reserved',
+                                    'value': '%s | %s. .... ....' % (
+                                    self.ipBody.tcpHeader.flags.reserved.uint, self.ipBody.tcpHeader.flags.reserved.bin)
+                                },
+                                {
+                                    'label': 'Nonce',
+                                    'value': '%s | ...%d .... ....' % (
+                                        self.ipBody.tcpHeader.flags.nonce, self.ipBody.tcpHeader.flags.nonce)
+                                },
+                                {
+                                    'label': 'Congestion Window Reduced',
+                                    'value': '%s | .... %d... ....' % (
+                                        self.ipBody.tcpHeader.flags.cwr, self.ipBody.tcpHeader.flags.cwr)
+                                },
+                                {
+                                    'label': 'ECN-Echo',
+                                    'value': '%s | .... .%d.. ....' % (
+                                        self.ipBody.tcpHeader.flags.ecn_echo,
+                                        self.ipBody.tcpHeader.flags.ecn_echo)
+                                },
+                                {
+                                    'label': 'Urgent',
+                                    'value': '%s | .... ..%d. ....' % (
+                                        self.ipBody.tcpHeader.flags.urgent, self.ipBody.tcpHeader.flags.urgent)
+                                },
+                                {
+                                    'label': 'Acknowledgment',
+                                    'value': '%s | .... ...%d ....' % (
+                                        self.ipBody.tcpHeader.flags.acknowledgement,
+                                        self.ipBody.tcpHeader.flags.acknowledgement)
+                                },
+                                {
+                                    'label': 'Push',
+                                    'value': '%s | .... .... %d...' % (
+                                        self.ipBody.tcpHeader.flags.push, self.ipBody.tcpHeader.flags.push)
+                                },
+                                {
+                                    'label': 'Reset',
+                                    'value': '%s | .... .... .%d..' % (
+                                        self.ipBody.tcpHeader.flags.reset, self.ipBody.tcpHeader.flags.reset)
+                                },
+                                {
+                                    'label': 'Syn',
+                                    'value': '%s | .... .... ..%d.' % (
+                                        self.ipBody.tcpHeader.flags.syn, self.ipBody.tcpHeader.flags.syn)
+                                },
+                                {
+                                    'label': 'Fin',
+                                    'value': '%s | .... .... ...%d' % (
+                                        self.ipBody.tcpHeader.flags.fin, self.ipBody.tcpHeader.flags.fin)
+                                }
+                            ]
+                        },
+                        {
+                            'label': '窗口大小',
+                            'value': self.ipBody.tcpHeader.window_size
+                        },
+                        {
+                            'label': '校验和',
+                            'value': '0x' + self.ipBody.tcpHeader.checksum
+                        }
+                    ]
+                })
 
         return data
 
