@@ -67,7 +67,40 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/tcp-para
     csvreader = csv.reader(csvfile, delimiter=',')
     next(csvreader)
     for row in csvreader:
+        if row[0] == 2:
+            params = [
+                {
+                    'name': 'MSS Value',
+                    'length': 16
+                }
+            ]
+        elif row[0] == 3:
+            params = [
+                {
+                    'name': 'Shift count',
+                    'length': 16
+                }
+            ]
+        elif row[0] == 8:
+            params = [
+                {
+                    'name': 'Timestamp value',
+                    'length': 32
+                },
+                {
+                    'name': 'Timestamp echo reply',
+                    'length': 32
+                }
+            ]
+        else:
+            params = [
+                {
+                    'name': 'Value',
+                    'length': (int('0' + row[1].replace('-', '1').replace('N', '1').replace('variable', '1')) - 1) * 8
+                }
+            ]
         tcp_options[row[0]] = {
-            'length': row[1],
-            'meaning': row[2]
+            'length': int('0' + row[1].replace('-', '1').replace('N', '1').replace('variable', '1')),
+            'meaning': row[2],
+            'params': params
         }
