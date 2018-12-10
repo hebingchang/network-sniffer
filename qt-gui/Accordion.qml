@@ -66,7 +66,6 @@ Column {
                         margins: 5
                     }
 
-                    font.pointSize: 12
                     font.bold: modelData.bold ? true : false
                     visible: parent.visible
 
@@ -75,7 +74,6 @@ Column {
                 }
 
                 Text {
-                    font.pointSize: 13
                     visible: infoRow.visible
 
                     color: 'black'

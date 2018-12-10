@@ -166,6 +166,9 @@ class Packet:
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac
             self.protocol = 'ARP'
             self.arpBody = arpBody(self.__ipData)
+
+        else:
+            self.source = None
     
     def parse(self):
         data = [

@@ -66,7 +66,6 @@ Window {
         text: qsTr("开始抓包")
         anchors.right: parent.right
         anchors.rightMargin: 110
-        font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
     }
@@ -94,7 +93,6 @@ Window {
         text: qsTr("刷新网卡")
         anchors.right: parent.right
         anchors.rightMargin: 8
-        font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
         onClicked: {
@@ -132,7 +130,6 @@ Window {
                   text: '#'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 12
                   width: 50
               }
               spacing: 10
@@ -140,28 +137,24 @@ Window {
                   text: '源地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 12
                   width: 240
               }
               Text {
                   text: '目的地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 12
                   width: 240
               }
               Text {
                   text: '协议'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 12
                   width: 80
               }
               Text {
                   text: '长度'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
-                  font.pointSize: 12
                   width: 50
               }
           }
@@ -184,7 +177,6 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
-                    font.pointSize: 12
                     width: 50
                 }
                 spacing: 10
@@ -194,7 +186,6 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
-                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 240
                 }
@@ -204,7 +195,6 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
-                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 240
                 }
@@ -214,7 +204,6 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
-                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 80
                 }
@@ -224,7 +213,6 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
-                    font.pointSize: 13
                     font.family: 'Courier'
                     width: 50
                 }
@@ -301,7 +289,6 @@ Window {
         leftPadding: 0
         bottomPadding: 5
         topPadding: 0
-        font.pointSize: 26
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 18
         anchors.right: parent.right

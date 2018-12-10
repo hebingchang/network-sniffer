@@ -34,15 +34,18 @@ class SnifferThread(QThread):
         for ts, pkt in sniffer:
             self.packet_count += 1
             packet = network_sniffer.Packet(sniffer, pkt, self.packet_count)
-            data = {
-                'id': packet.id,
-                'source': packet.source,
-                'destination': packet.destination,
-                'protocol': packet.protocol,
-                'length': packet.length
-            }
-            print(data)
-            self.signal.emit((data, packet))
+            if packet.source == None:
+                print('Packet not supported.')
+            else:
+                data = {
+                    'id': packet.id,
+                    'source': packet.source,
+                    'destination': packet.destination,
+                    'protocol': packet.protocol,
+                    'length': packet.length
+                }
+                print(data)
+                self.signal.emit((data, packet))
 
 class parseController(QObject):
     def __init__(self, *args, **kwags):
