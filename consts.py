@@ -1,6 +1,7 @@
 import requests
 import os
 import csv
+from bitstring import BitArray
 
 def updateConsts():
     r = requests.get('https://www.iana.org/assignments/ieee-802-numbers/ieee-802-numbers-1.csv')    # 以太类型
@@ -33,7 +34,12 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/ieee-802
     csvreader = csv.reader(csvfile, delimiter=',')
     next(csvreader)
     for row in csvreader:
-        eth_types[row[1]] = row[4]
+        key = row[1].split('-')
+        if len(key) == 1:
+            eth_types[row[1]] = row[4]
+        else:
+            for idx in range(BitArray('0x' + key[0]).uint, BitArray('0x' + key[1]).uint + 1):
+                eth_types[str(BitArray('uint:16=' + str(idx)).hex).upper()] = row[4]
 
 protocol_types = dict()
 with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/protocol-numbers.csv', 'r') as csvfile:
