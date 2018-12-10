@@ -45,7 +45,7 @@ Window {
     id: mainWindow
     objectName: "mainWindow"
     visible: true
-    width: 585
+    width: 800
     height: 500
     title: qsTr("Sniffer")
 
@@ -59,13 +59,13 @@ Window {
     Button {
         id: btnStart
         objectName: "btnStart"
-        x: 409
-        y: 6
-        width: 81
+        x: 394
+        y: 5
+        width: 96
         height: 27
         text: qsTr("开始抓包")
         anchors.right: parent.right
-        anchors.rightMargin: 95
+        anchors.rightMargin: 110
         font.pointSize: 12
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
@@ -79,7 +79,7 @@ Window {
         anchors.left: parent.left
         anchors.leftMargin: 73
         anchors.right: parent.right
-        anchors.rightMargin: 182
+        anchors.rightMargin: 212
         model: ListModel {
             id: devices
         }
@@ -88,8 +88,8 @@ Window {
     Button {
         id: btnRefresh
         x: 496
-        y: 6
-        width: 81
+        y: 5
+        width: 96
         height: 27
         text: qsTr("刷新网卡")
         anchors.right: parent.right
@@ -105,6 +105,9 @@ Window {
     ListView {
         id: packetList
         height: 172
+        anchors.bottom: groupPacket.top
+        anchors.bottomMargin: -171
+        anchors.horizontalCenter: groupPacket.horizontalCenter
         anchors.right: parent.right
         anchors.rightMargin: 20
         anchors.left: parent.left
@@ -138,7 +141,7 @@ Window {
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
                   font.pointSize: 12
-                  width: 30
+                  width: 50
               }
               spacing: 10
               Text {
@@ -146,14 +149,14 @@ Window {
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
                   font.pointSize: 12
-                  width: 160
+                  width: 240
               }
               Text {
                   text: '目的地址'
                   anchors.verticalCenter: parent.verticalCenter
                   font.bold: true
                   font.pointSize: 12
-                  width: 160
+                  width: 240
               }
               Text {
                   text: '协议'
@@ -190,7 +193,7 @@ Window {
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
                     font.pointSize: 12
-                    width: 30
+                    width: 50
                 }
                 spacing: 10
                 Text {
@@ -201,7 +204,7 @@ Window {
                     font.bold: false
                     font.pointSize: 13
                     font.family: 'Courier'
-                    width: 160
+                    width: 240
                 }
                 Text {
                     text: destination
@@ -211,7 +214,7 @@ Window {
                     font.bold: false
                     font.pointSize: 13
                     font.family: 'Courier'
-                    width: 160
+                    width: 240
                 }
                 Text {
                     text: protocol
@@ -243,9 +246,9 @@ Window {
 
     Label {
         id: lblSniffering
-        x: 525
+        x: 696
         y: 42
-        width: 67
+        width: 96
         height: 16
         color: "#f04444"
         text: "● 正在抓包"
