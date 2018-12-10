@@ -110,6 +110,7 @@ Window {
         highlightRangeMode: ListView.NoHighlightRange
         ScrollBar.vertical: ScrollBar {}
         headerPositioning: ListView.OverlayHeader
+        highlightMoveDuration : 1000
         clip: true
         highlight: Rectangle { color: "lightsteelblue"; radius: 0 }
         header: Item {
@@ -177,6 +178,7 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
+                    elide: Text.ElideRight
                     width: 50
                 }
                 spacing: 10
@@ -187,6 +189,7 @@ Window {
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
                     font.family: 'Courier'
+                    elide: Text.ElideRight
                     width: 240
                 }
                 Text {
@@ -196,6 +199,7 @@ Window {
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
                     font.family: 'Courier'
+                    elide: Text.ElideRight
                     width: 240
                 }
                 Text {
@@ -205,6 +209,7 @@ Window {
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
                     font.family: 'Courier'
+                    elide: Text.ElideRight
                     width: 80
                 }
                 Text {
@@ -214,6 +219,7 @@ Window {
                     // horizontalAlignment: Text.AlignHCenter
                     font.bold: false
                     font.family: 'Courier'
+                    elide: Text.ElideRight
                     width: 50
                 }
             }

@@ -91,6 +91,7 @@ class ipv6Header:
         next_header = self.next_header_code
         offset = 320
         while next_header in [0, 60, 43, 44, 51, 50, 60, 135, 59]:
+            self.protocol = consts.protocol_types[str(bits[offset:offset+8].uint)]
             self.options.append({
                 'code': next_header,
                 'next_header': bits[offset:offset+8].uint,
@@ -356,12 +357,12 @@ class Packet:
                 for option in self.ipHeader.options:
                     ipv6_header['children'].append(
                         {
-                            'label': consts.protocol_types[str(option['label'])],
+                            'label': consts.protocol_types[str(option['code'])],
                             'value': '0x' + option['value'],
-                            'children': {
+                            'children': [{
                                 'label': '下一头部类型',
-                                'value': '%s (%s)' % (consts.protocol_types[option['next_header']], option['next_header'])
-                            }
+                                'value': '%s (%s)' % (consts.protocol_types[str(option['next_header'])], option['next_header'])
+                            }]
                         }
                     )
 
