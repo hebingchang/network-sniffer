@@ -5,6 +5,27 @@ from bitstring import BitArray
 import ipaddress
 from netaddr import *
 
+class Sniffer:
+    def __init__(self, sniffer):
+        self.ip_packets = dict()
+        self.ip_ids = dict()           # 处理 IP 分片的情况
+        self.count = 0
+        self.sniffer = sniffer
+
+    def packetArrive(self, pkt):
+        self.count += 1
+        packet = Packet(self.sniffer, pkt, self.count, self.ip_packets, self.ip_ids)
+        if packet.ethHeader.type_code == '0800':      # 处理 IP 分片
+            self.ip_packets[self.count] = packet
+            if packet.ipHeader.identification_int in self.ip_ids:
+                self.ip_ids[packet.ipHeader.identification_int].append(self.count)
+            else:
+                self.ip_ids[packet.ipHeader.identification_int] = [self.count]
+
+        return packet
+
+
+
 class ipFlag:
     def __init__(self, flag):
         self.raw = '0x' + flag.hex
@@ -142,13 +163,15 @@ class tcpHeader:
         # self.options = tcpOptions(bits[160:self.header_length*8])
 
 class Packet:
-    def __init__(self, sniffer, pkt, id):
+    def __init__(self, sniffer, pkt, id, ip_packets, ip_ids):
         self.id = id
         self.sniffer = sniffer
         self.pkt = pkt
         self.length = BitArray(pkt).length
         self.__ethHeader = pkt[0:sniffer.dloff]
         self.__ipData = pkt[sniffer.dloff:]
+        self.ip_packets = ip_packets
+        self.ip_ids = ip_ids
 
         self.ethHeader = ethHeader(self.__ethHeader)
 
@@ -160,8 +183,16 @@ class Packet:
                 self.ipHeader = ipv6Header(self.__ipData)
 
             self.source, self.destination, self.protocol = self.ipHeader.source_ip, self.ipHeader.dest_ip, self.ipHeader.protocol
+            self.ipBodyRaw = self.__ipData[self.ipHeader.header_length:]
 
-            self.ipBody = ipBody(self.__ipData[self.ipHeader.header_length:], self.ipHeader.protocol)
+            if not self.ipHeader.flags.more_fragment:
+
+                if self.ethHeader.type_code == '0800':
+                    if self.ipHeader.identification_int in self.ip_ids:
+                        for id in self.ip_ids[self.ipHeader.identification_int]:
+                            self.ipBodyRaw += self.ip_packets[id].ipBodyRaw
+
+                self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol)
 
         elif self.ethHeader.type_code == '0806':                    # ARP
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac

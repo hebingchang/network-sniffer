@@ -1,9 +1,6 @@
-import time
-
 from PyQt5.QtGui import QGuiApplication
-from PyQt5.QtQml import QQmlApplicationEngine, QQmlProperty
-from PyQt5.QtCore import QUrl, QObject, pyqtSlot, QRunnable, QThreadPool, QAbstractListModel, QThread, pyqtSignal, \
-    QVariant
+from PyQt5.QtQml import QQmlApplicationEngine
+from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
 
 import pcap, sys
 import network_sniffer
@@ -28,12 +25,14 @@ class SnifferThread(QThread):
     # run method gets called when we start the thread
     def run(self):
         print("Started. " + self.dev)
-        sniffer = pcap.pcap(name=self.dev, promisc=True, immediate=True, timeout_ms=50)
         addr = lambda pkt, offset: '.'.join(str(pkt[i]) for i in range(offset, offset + 4))
+
+        sniffer = pcap.pcap(name=self.dev, promisc=True, immediate=True, timeout_ms=50)
+        bug_sniffer = network_sniffer.Sniffer(sniffer)
 
         for ts, pkt in sniffer:
             self.packet_count += 1
-            packet = network_sniffer.Packet(sniffer, pkt, self.packet_count)
+            packet = bug_sniffer.packetArrive(pkt)
             if packet.source == None:
                 print('Packet not supported.')
             else:
@@ -76,7 +75,6 @@ class snifferGui:
 
         self.root = engine.rootObjects()[0]
         self.root.setDevModel(self.devs_name)
-        self.root.initPieMenu()
         self.dev = self.devs[0]
         self.sniffer_status = False
 
@@ -96,8 +94,11 @@ class snifferGui:
 
         packets = list()
 
-        engine.quit.connect(app.quit)
-        sys.exit(app.exec_())
+        # engine.quit.connect(app.quit)
+        app.exec_()
+
+        # sys.exit(app.exec_())
+        sys.exit(0)
 
     def myFunction(self):
         if (self.sniffer_status):

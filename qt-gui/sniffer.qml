@@ -6,11 +6,6 @@ import QtQuick.Extras 1.4
 import QtGraphicalEffects 1.0
 
 Window {
-    function initPieMenu () {
-        pieMenu.addItem('开始抓包')
-        pieMenu.menuItems[0].onTriggered = function () { startSnifferAction() }
-    }
-
     function setDevModel(dev) {
         comboDevice.model = dev
     }
@@ -100,136 +95,6 @@ Window {
         }
     }
 
-    ListView {
-        id: packetList
-        x: 7
-        y: 32
-        width: 771
-        height: 172
-        parent: groupPacket
-        highlightRangeMode: ListView.NoHighlightRange
-        ScrollBar.vertical: ScrollBar {}
-        headerPositioning: ListView.OverlayHeader
-        highlightMoveDuration : 1000
-        clip: true
-        highlight: Rectangle { color: "lightsteelblue"; radius: 0 }
-        header: Item {
-          id: headerItem
-          width: packetList.width
-          height: 30
-          z: 2
-          Rectangle {
-              color: 'white'
-              width: packetList.width
-              height: 30
-          }
-
-          Row {
-              id: rowHeader
-
-              Text {
-                  text: '#'
-                  anchors.verticalCenter: parent.verticalCenter
-                  font.bold: true
-                  width: 50
-              }
-              spacing: 10
-              Text {
-                  text: '源地址'
-                  anchors.verticalCenter: parent.verticalCenter
-                  font.bold: true
-                  width: 240
-              }
-              Text {
-                  text: '目的地址'
-                  anchors.verticalCenter: parent.verticalCenter
-                  font.bold: true
-                  width: 240
-              }
-              Text {
-                  text: '协议'
-                  anchors.verticalCenter: parent.verticalCenter
-                  font.bold: true
-                  width: 80
-              }
-              Text {
-                  text: '长度'
-                  anchors.verticalCenter: parent.verticalCenter
-                  font.bold: true
-                  width: 50
-              }
-          }
-        }
-        delegate: Item {
-            x: 5
-            width: packetList.width
-            height: 20
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    changeItem(index)
-                }
-            }
-            Row {
-                id: row1
-
-                Text {
-                    text: id
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
-                    elide: Text.ElideRight
-                    width: 50
-                }
-                spacing: 10
-                Text {
-                    text: source
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: Text.AlignVCenter
-                    // horizontalAlignment: Text.AlignHCenter
-                    font.bold: false
-                    font.family: 'Courier'
-                    elide: Text.ElideRight
-                    width: 240
-                }
-                Text {
-                    text: destination
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: Text.AlignVCenter
-                    // horizontalAlignment: Text.AlignHCenter
-                    font.bold: false
-                    font.family: 'Courier'
-                    elide: Text.ElideRight
-                    width: 240
-                }
-                Text {
-                    text: protocol
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: Text.AlignVCenter
-                    // horizontalAlignment: Text.AlignHCenter
-                    font.bold: false
-                    font.family: 'Courier'
-                    elide: Text.ElideRight
-                    width: 80
-                }
-                Text {
-                    text: length
-                    anchors.verticalCenter: parent.verticalCenter
-                    verticalAlignment: Text.AlignVCenter
-                    // horizontalAlignment: Text.AlignHCenter
-                    font.bold: false
-                    font.family: 'Courier'
-                    elide: Text.ElideRight
-                    width: 50
-                }
-            }
-        }
-        model: ListModel {
-            id: packetModel
-            objectName: "packetModel"
-        }
-    }
-
     Label {
         id: lblSniffering
         x: 696
@@ -261,19 +126,6 @@ Window {
         }
     }
 
-    PieMenu {
-        id: pieMenu
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.rightMargin: 32
-        anchors.fill: parent
-        acceptedButtons: Qt.RightButton
-
-        onClicked: pieMenu.popup(mouseX, mouseY)
-    }
-
     GroupBox {
         id: groupPacket
         y: 42
@@ -283,6 +135,140 @@ Window {
         anchors.left: parent.left
         anchors.leftMargin: 8
         title: qsTr("数据包")
+
+        ListView {
+            id: packetList
+            anchors.top: parent.top
+            anchors.topMargin: 32
+            anchors.left: parent.left
+            anchors.leftMargin: 7
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 7
+            anchors.right: parent.right
+            anchors.rightMargin: 7
+            parent: groupPacket
+            highlightRangeMode: ListView.NoHighlightRange
+            ScrollBar.vertical: ScrollBar {}
+            headerPositioning: ListView.OverlayHeader
+            highlightMoveDuration : 1000
+            clip: true
+            highlight: Rectangle { color: "lightsteelblue"; radius: 0 }
+            header: Item {
+                id: headerItem
+                width: packetList.width
+                height: 30
+                z: 2
+                Rectangle {
+                    color: 'white'
+                    width: packetList.width
+                    height: 30
+                }
+
+                Row {
+                    id: rowHeader
+
+                    Text {
+                        text: '#'
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.bold: true
+                        width: 50
+                    }
+                    spacing: 10
+                    Text {
+                        text: '源地址'
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.bold: true
+                        width: 240
+                    }
+                    Text {
+                        text: '目的地址'
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.bold: true
+                        width: 240
+                    }
+                    Text {
+                        text: '协议'
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.bold: true
+                        width: 80
+                    }
+                    Text {
+                        text: '长度'
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.bold: true
+                        width: 50
+                    }
+                }
+            }
+            delegate: Item {
+                x: 5
+                width: packetList.width
+                height: 20
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        changeItem(index)
+                    }
+                }
+                Row {
+                    id: row1
+
+                    Text {
+                        text: id
+                        anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.bold: true
+                        elide: Text.ElideRight
+                        width: 50
+                    }
+                    spacing: 10
+                    Text {
+                        text: source
+                        anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: Text.AlignVCenter
+                        // horizontalAlignment: Text.AlignHCenter
+                        font.bold: false
+                        font.family: 'Courier'
+                        elide: Text.ElideRight
+                        width: 240
+                    }
+                    Text {
+                        text: destination
+                        anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: Text.AlignVCenter
+                        // horizontalAlignment: Text.AlignHCenter
+                        font.bold: false
+                        font.family: 'Courier'
+                        elide: Text.ElideRight
+                        width: 240
+                    }
+                    Text {
+                        text: protocol
+                        anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: Text.AlignVCenter
+                        // horizontalAlignment: Text.AlignHCenter
+                        font.bold: false
+                        font.family: 'Courier'
+                        elide: Text.ElideRight
+                        width: 80
+                    }
+                    Text {
+                        text: length
+                        anchors.verticalCenter: parent.verticalCenter
+                        verticalAlignment: Text.AlignVCenter
+                        // horizontalAlignment: Text.AlignHCenter
+                        font.bold: false
+                        font.family: 'Courier'
+                        elide: Text.ElideRight
+                        width: 50
+                    }
+                }
+            }
+            model: ListModel {
+                id: packetModel
+                objectName: "packetModel"
+            }
+        }
     }
 
     RoundButton {
@@ -337,6 +323,6 @@ Window {
 }
 
 /*##^## Designer {
-    D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:172;anchors_width:573;anchors_x:6;anchors_y:33}
+    D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:172;anchors_width:771;anchors_x:7;anchors_y:32}
 }
  ##^##*/
