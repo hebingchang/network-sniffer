@@ -67,6 +67,7 @@ class parseController(QObject):
 
     @pyqtSlot(int, str)
     def savePacket(self, index, path):
+        print(path)
         f = open(path.replace('file://', ''), 'w')
         t = PrettyTable(['字段', '值'])
         t.align = 'l'
@@ -119,9 +120,8 @@ class snifferGui:
 
         packets = list()
 
-        # engine.quit.connect(app.quit)
-        app.exec_()
-        del app
+        engine.quit.connect(app.quit)
+        sys.exit(app.exec_())
 
         # sys.exit(app.exec_())
 
