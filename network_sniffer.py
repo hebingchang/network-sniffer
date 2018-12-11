@@ -219,7 +219,7 @@ class Packet:
                         for id in self.ip_ids[self.ipHeader.identification_int]:
                             self.ipBodyRaw += self.ip_packets[id].ipBodyRaw
 
-            self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol)
+            self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol, self.ipHeader.ip_bits)
             print('ipBody parse complete.')
 
         elif self.ethHeader.type_code == '0806':                    # ARP
