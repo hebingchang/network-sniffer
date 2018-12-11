@@ -4,6 +4,7 @@ import QtQuick.Controls 2.3
 import QtQuick.Layouts 1.3
 import QtQuick.Extras 1.4
 import QtGraphicalEffects 1.0
+import QtQuick.Dialogs 1.3
 
 Window {
     function setDevModel(dev) {
@@ -35,6 +36,29 @@ Window {
         parseAccordion.model = data
 
         packetList.currentIndex = index
+    }
+
+    function savePacketDialog () {
+        if (packetList.currentIndex == -1) {
+            msgbox('错误', '未选择数据包。')
+        } else {
+            fileDialog.visible = true
+        }
+    }
+
+    function msgbox (title, message) {
+        messageDialog.title = title
+        messageDialog.text = message
+        messageDialog.visible = true
+    }
+
+    function toggleMenu () {
+        console.log(btnSavePacket.opacity)
+        btnSavePacket.opacity = 1 - btnSavePacket.opacity
+        btnRebuildTCP.opacity = 1 - btnRebuildTCP.opacity
+        plusImage.rotation = 225 - plusImage.rotation
+        ease1.duration = 2500 - ease1.duration
+        ease2.duration = 2500 - ease2.duration
     }
 
     id: mainWindow
@@ -71,7 +95,7 @@ Window {
         y: 5
         height: 28
         anchors.left: parent.left
-        anchors.leftMargin: 73
+        anchors.leftMargin: 80
         anchors.right: parent.right
         anchors.rightMargin: 212
         model: ListModel {
@@ -103,6 +127,7 @@ Window {
         height: 16
         color: "#f04444"
         text: "● 正在抓包"
+        horizontalAlignment: Text.AlignRight
         verticalAlignment: Text.AlignVCenter
         visible: false
         anchors.right: parent.right
@@ -171,32 +196,32 @@ Window {
                         text: '#'
                         anchors.verticalCenter: parent.verticalCenter
                         font.bold: true
-                        width: 50
+                        width: 5 / 75 * packetList.width
                     }
                     spacing: 10
                     Text {
                         text: '源地址'
                         anchors.verticalCenter: parent.verticalCenter
                         font.bold: true
-                        width: 240
+                        width: 24 / 75 * packetList.width
                     }
                     Text {
                         text: '目的地址'
                         anchors.verticalCenter: parent.verticalCenter
                         font.bold: true
-                        width: 240
+                        width: 24 / 75 * packetList.width
                     }
                     Text {
                         text: '协议'
                         anchors.verticalCenter: parent.verticalCenter
                         font.bold: true
-                        width: 80
+                        width: 8 / 75 * packetList.width
                     }
                     Text {
                         text: '长度'
                         anchors.verticalCenter: parent.verticalCenter
                         font.bold: true
-                        width: 50
+                        width: 5 / 75 * packetList.width
                     }
                 }
             }
@@ -219,7 +244,7 @@ Window {
                         verticalAlignment: Text.AlignVCenter
                         font.bold: true
                         elide: Text.ElideRight
-                        width: 50
+                        width: 5 / 75 * packetList.width
                     }
                     spacing: 10
                     Text {
@@ -230,7 +255,7 @@ Window {
                         font.bold: false
                         font.family: 'Courier'
                         elide: Text.ElideRight
-                        width: 240
+                        width: 24 / 75 * packetList.width
                     }
                     Text {
                         text: destination
@@ -240,7 +265,7 @@ Window {
                         font.bold: false
                         font.family: 'Courier'
                         elide: Text.ElideRight
-                        width: 240
+                        width: 24 / 75 * packetList.width
                     }
                     Text {
                         text: protocol
@@ -250,7 +275,7 @@ Window {
                         font.bold: false
                         font.family: 'Courier'
                         elide: Text.ElideRight
-                        width: 80
+                        width: 8 / 75 * packetList.width
                     }
                     Text {
                         text: length
@@ -260,7 +285,7 @@ Window {
                         font.bold: false
                         font.family: 'Courier'
                         elide: Text.ElideRight
-                        width: 50
+                        width: 5 / 75 * packetList.width
                     }
                 }
             }
@@ -293,9 +318,14 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             source: 'images/plus.svg'
+            Behavior on rotation { PropertyAnimation {
+                properties: "rotation";
+                easing.type: Easing.InOutQuad
+                duration: 1000
+            } }
         }
 
-        onClicked: pieMenu.popup(mouseX, mouseY)
+        onClicked: toggleMenu()
     }
 
     GroupBox {
@@ -319,6 +349,103 @@ Window {
             anchors.margins: 10
             id: parseAccordion
         }
+    }
+
+    RoundButton {
+        id: btnSavePacket
+        x: 753
+        y: 406
+        width: 30
+        height: 30
+        text: qsTr("")
+        visible: true
+        z: 999
+        leftPadding: 0
+        anchors.right: parent.right
+        anchors.bottomMargin: 64
+        Image {
+            id: plusImage1
+            width: 15
+            height: 15
+            anchors.verticalCenterOffset: 1
+            anchors.horizontalCenterOffset: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: "images/save.svg"
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Behavior on opacity { PropertyAnimation {
+            id: ease1
+            properties: "opacity"
+            easing.type: Easing.InOutQuad
+            duration: 1000
+        } }
+
+        topPadding: 0
+        anchors.rightMargin: 17
+        rightPadding: 0
+        anchors.bottom: parent.bottom
+        bottomPadding: 5
+        onClicked: savePacketDialog()
+        ToolTip.visible: hovered
+        ToolTip.text: qsTr("导出数据包文本")
+        opacity: 0
+    }
+
+    RoundButton {
+        id: btnRebuildTCP
+        x: 753
+        y: 370
+        width: 30
+        height: 30
+        text: qsTr("")
+        leftPadding: 0
+        z: 999
+        anchors.right: parent.right
+        anchors.bottomMargin: 100
+        Image {
+            id: plusImage2
+            width: parent.width / 2.5
+            height: parent.height / 2.5
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: "images/plus.svg"
+            anchors.verticalCenter: parent.verticalCenter
+        }
+        Behavior on opacity { PropertyAnimation {
+            id: ease2
+            properties: "opacity"
+            easing.type: Easing.InOutQuad
+            duration: 1500
+        } }
+        topPadding: 0
+        anchors.rightMargin: 17
+        rightPadding: 0
+        anchors.bottom: parent.bottom
+        bottomPadding: 5
+        ToolTip.visible: hovered
+        ToolTip.text: qsTr("导出 TCP 分片数据")
+        opacity: 0
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "另存为数据包"
+        folder: shortcuts.home
+        nameFilters: [ "文本文档 (*.txt)" ]
+        onAccepted: {
+            parse.savePacket(packetList.currentIndex, fileDialog.fileUrls)
+        }
+        onRejected: {
+            console.log("Canceled")
+        }
+        selectExisting: false
+        selectMultiple: false
+    }
+
+    MessageDialog {
+        id: messageDialog
+        title: ""
+        text: ""
     }
 }
 

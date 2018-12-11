@@ -8,6 +8,9 @@ import queue
 import json
 import os
 import netifaces, psutil
+from anytree.importer import JsonImporter
+from anytree import RenderTree
+importer = JsonImporter()
 
 #somewhere accessible to both:
 callback_queue = queue.Queue()
@@ -60,6 +63,19 @@ class parseController(QObject):
         data = packets[index].parse()
         return json.dumps(data)
 
+    @pyqtSlot(int, str)
+    def savePacket(self, index, path):
+        f = open(path.replace('file://', ''), 'w')
+        write = []
+        root = importer.import_(json.dumps({
+            'label': '数据包',
+            'value': '',
+            'children': packets[index].parse()
+        }))
+        for pre, fill, node in RenderTree(root):
+            write.append("%s%s: %s\n" % (pre, node.label, node.value))
+        f.writelines(write)
+        f.close()
 
 class snifferGui:
     def __init__(self, argv):
@@ -101,9 +117,9 @@ class snifferGui:
 
         # engine.quit.connect(app.quit)
         app.exec_()
+        del app
 
         # sys.exit(app.exec_())
-        sys.exit(0)
 
     def myFunction(self):
         global listening
