@@ -67,8 +67,11 @@ class parseController(QObject):
 
     @pyqtSlot(int, str)
     def savePacket(self, index, path):
-        print(path)
-        f = open(path.replace('file://', ''), 'w')
+        if os.name == 'nt':
+            path = path.replace('file://', '')[1:]
+        else:
+            path = path.replace('file://', '')
+        f = open(path, 'w')
         t = PrettyTable(['字段', '值'])
         t.align = 'l'
 
