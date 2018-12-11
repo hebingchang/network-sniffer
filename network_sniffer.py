@@ -133,7 +133,7 @@ class icmpHeader:
         self.checksum = bits[16:32].hex
 
 class ipBody:
-    def doChecksum(self, buf, ip_bits):
+    def doChecksum(self, buf, ip_bits, protocol):
         bits = BitArray(buf)
         checksum = int(len(bits) / 8)
         if len(bits) % 16 != 0:
@@ -143,7 +143,10 @@ class ipBody:
         while ip_bits.uint != 0:
             checksum += ip_bits[-16:].uint
             ip_bits = ip_bits >> 16
-        checksum += 6   # 传输层协议号
+        if protocol == 'TCP':
+            checksum += 6   # 传输层协议号
+        elif protocol == 'UDP':
+            checksum += 17
         if checksum > 65535:    # 0xffff
             sumArray = BitArray(hex(checksum))
             checksum = sumArray.uint - (sumArray >> 16).uint * 65535
@@ -153,7 +156,9 @@ class ipBody:
         if protocol == 'TCP':                # TCP
             self.tcpHeader = tcpHeader(buf)
             self.parameters = buf, ip_bits
-            # self.tcpChecksum = self.doChecksum(buf, ip_bits)
+        elif protocol == 'UDP':
+            self.udpHeader = udpHeader(buf)
+            self.parameters = buf, ip_bits
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
 
@@ -177,7 +182,6 @@ class tcpOptions:
         while buf[offset:offset+8].uint != 0:
             option = {'kind': buf[offset:offset+8].uint}
 
-
 class tcpHeader:
     def __init__(self, buf):
         bits = BitArray(buf)
@@ -192,6 +196,14 @@ class tcpHeader:
         self.checksum = bits[128:144].hex
         self.urgent_pointer = bits[144:160].uint
         # self.options = tcpOptions(bits[160:self.header_length*8])
+
+class udpHeader:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.source_port = bits[0:16].uint
+        self.destination_port = bits[16:32].uint
+        self.length = bits[32:48].uint
+        self.checksum = bits[48:64].hex
 
 class Packet:
     def __init__(self, sniffer, pkt, id, ip_packets, ip_ids):
@@ -450,7 +462,7 @@ class Packet:
                 data.append(slicing)
             else:
                 if self.ipHeader.protocol == 'TCP':
-                    self.ipBody.tcpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1])
+                    self.ipBody.tcpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol)
                     data.append({
                         'label': 'TCP 头部 / Transmission Control Protocol Header',
                         'value': '',
@@ -541,6 +553,32 @@ class Packet:
                             {
                                 'label': '校验和',
                                 'value': '0x%s (%s)' % (self.ipBody.tcpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.tcpChecksum])
+                            }
+                        ]
+                    })
+
+                elif self.ipHeader.protocol == 'UDP':
+                    self.ipBody.udpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol)
+                    data.append({
+                        'label': 'UDP 头部 / User Datagram Protocol Header',
+                        'value': '',
+                        'bold': True,
+                        'children': [
+                            {
+                                'label': '源端口',
+                                'value': self.ipBody.udpHeader.source_port
+                            },
+                            {
+                                'label': '目的端口',
+                                'value': self.ipBody.udpHeader.destination_port
+                            },
+                            {
+                                'label': '长度',
+                                'value': self.ipBody.udpHeader.length
+                            },
+                            {
+                                'label': '校验和',
+                                'value': '0x%s (%s)' % (self.ipBody.udpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.udpChecksum])
                             }
                         ]
                     })
