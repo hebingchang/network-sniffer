@@ -109,6 +109,7 @@ class ipv6Header:
         self.hop_limit = bits[56:64].uint
         self.source_ip = str(ipaddress.IPv6Address(bits[64:64 + 128].bytes))
         self.dest_ip = str(ipaddress.IPv6Address(bits[64 + 128:64 + 256].bytes))
+        self.ip_bits = bits[64:64 + 256]
 
         self.options = []
         next_header = self.next_header_code
@@ -139,6 +140,10 @@ class ipBody:
             bits.append('0x00')
         for i in range(0, len(bits), 16):
             checksum += bits[i: i + 16].uint
+        while ip_bits.uint != 0:
+            checksum += ip_bits[-16:].uint
+            ip_bits = ip_bits >> 16
+        checksum += 6   # 传输层协议号
         if checksum > 65535:    # 0xffff
             sumArray = BitArray(hex(checksum))
             checksum = sumArray.uint - (sumArray >> 16).uint * 65535
