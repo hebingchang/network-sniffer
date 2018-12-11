@@ -17,10 +17,11 @@ class Sniffer:
         packet = Packet(self.sniffer, pkt, self.count, self.ip_packets, self.ip_ids)
         if packet.ethHeader.type_code == '0800':      # 处理 IP 分片
             self.ip_packets[self.count] = packet
+
             if packet.ipHeader.identification_int in self.ip_ids:
-                self.ip_ids[packet.ipHeader.identification_int].append(self.count)
+                self.ip_ids[packet.ipHeader.identification_int].append(packet.id)
             else:
-                self.ip_ids[packet.ipHeader.identification_int] = [self.count]
+                self.ip_ids[packet.ipHeader.identification_int] = [packet.id]
 
         return packet
 
@@ -206,17 +207,20 @@ class Packet:
             elif self.ipVersion == 6:
                 self.ipHeader = ipv6Header(self.__ipData)
 
+            print('ipHeader parse complete.')
+
             self.source, self.destination, self.protocol = self.ipHeader.source_ip, self.ipHeader.dest_ip, self.ipHeader.protocol
             self.ipBodyRaw = self.__ipData[self.ipHeader.header_length:]
 
-            if not self.ipHeader.flags.more_fragment:
-
-                if self.ethHeader.type_code == '0800':
-                    if self.ipHeader.identification_int in self.ip_ids:
+            if self.ethHeader.type_code == '0800':
+                if not self.ipHeader.flags.more_fragment:
+                    if self.ipHeader.identification_int != 0 and self.ipHeader.identification_int in self.ip_ids:
+                        print('More fragment.')
                         for id in self.ip_ids[self.ipHeader.identification_int]:
                             self.ipBodyRaw += self.ip_packets[id].ipBodyRaw
 
-                self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol, self.ipHeader.ip_bits)
+            self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol)
+            print('ipBody parse complete.')
 
         elif self.ethHeader.type_code == '0806':                    # ARP
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac

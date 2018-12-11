@@ -24,10 +24,12 @@ class SnifferThread(QThread):
 
     # run method gets called when we start the thread
     def run(self):
+        global listening
         print("Started. " + self.dev)
         addr = lambda pkt, offset: '.'.join(str(pkt[i]) for i in range(offset, offset + 4))
 
         sniffer = pcap.pcap(name=self.dev, promisc=True, immediate=True, timeout_ms=50)
+        # sniffer.setfilter('src host 10.162.81.65')
         bug_sniffer = network_sniffer.Sniffer(sniffer)
 
         for ts, pkt in sniffer:
@@ -45,6 +47,9 @@ class SnifferThread(QThread):
                 }
                 print(data)
                 self.signal.emit((data, packet))
+
+            if listening == False:
+                break
 
 class parseController(QObject):
     def __init__(self, *args, **kwags):
@@ -101,12 +106,15 @@ class snifferGui:
         sys.exit(0)
 
     def myFunction(self):
+        global listening
         if (self.sniffer_status):
             self.sniffer_status = False
             self.root.stopSnifferAction()
-            self.sniffer_thread.terminate()
+            # self.sniffer_thread.terminate()
+            listening = False
         else:
             self.sniffer_status = True
+            listening = True
             packets = list()
             self.root.startSnifferAction()
             self.sniffer_thread.dev = self.dev
