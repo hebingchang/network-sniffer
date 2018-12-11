@@ -135,7 +135,7 @@ class icmpHeader:
 class ipBody:
     def doChecksum(self, buf, ip_bits):
         bits = BitArray(buf)
-        checksum = len(bits) / 8
+        checksum = int(len(bits) / 8)
         if len(bits) % 16 != 0:
             bits.append('0x00')
         for i in range(0, len(bits), 16):
@@ -152,7 +152,8 @@ class ipBody:
     def __init__(self, buf, protocol, ip_bits):
         if protocol == 'TCP':                # TCP
             self.tcpHeader = tcpHeader(buf)
-            self.tcpChecksum = self.doChecksum(buf, ip_bits)
+            self.parameters = buf, ip_bits
+            # self.tcpChecksum = self.doChecksum(buf, ip_bits)
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
 
@@ -449,6 +450,7 @@ class Packet:
                 data.append(slicing)
             else:
                 if self.ipHeader.protocol == 'TCP':
+                    self.ipBody.tcpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1])
                     data.append({
                         'label': 'TCP 头部 / Transmission Control Protocol Header',
                         'value': '',
