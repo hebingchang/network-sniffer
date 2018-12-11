@@ -6,3 +6,5 @@ netaddr==0.7.19
 requests==2.20.1
 netifaces==0.10.7
 psutil==5.4.8
+prettytable==0.7.2
+anytree==2.4.3

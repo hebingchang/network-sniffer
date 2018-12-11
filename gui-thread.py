@@ -10,6 +10,8 @@ import os
 import netifaces, psutil
 from anytree.importer import JsonImporter
 from anytree import RenderTree
+from prettytable import PrettyTable
+
 importer = JsonImporter()
 
 #somewhere accessible to both:
@@ -66,15 +68,17 @@ class parseController(QObject):
     @pyqtSlot(int, str)
     def savePacket(self, index, path):
         f = open(path.replace('file://', ''), 'w')
-        write = []
+        t = PrettyTable(['字段', '值'])
+        t.align = 'l'
+
         root = importer.import_(json.dumps({
             'label': '数据包',
             'value': '',
             'children': packets[index].parse()
         }))
         for pre, fill, node in RenderTree(root):
-            write.append("%s%s: %s\n" % (pre, node.label, node.value))
-        f.writelines(write)
+            t.add_row([pre + node.label, node.value])
+        f.write(str(t))
         f.close()
 
 class snifferGui:
