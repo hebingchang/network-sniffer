@@ -60,6 +60,7 @@ class ipv4Header:
         self.header_length = bits[4:8].uint * 4           # bytes
         self.source_ip = str(ipaddress.IPv4Address(bits[96:96 + 32].bytes))
         self.dest_ip = str(ipaddress.IPv4Address(bits[96 + 32:96 + 64].bytes))
+        self.ip_bits = bits[96:96 + 64]
         self.differentiated_services = bits[8:16].hex
         self.total_length = bits[16:32].uint    # bit
         self.identification = bits[32:48].hex
@@ -130,9 +131,22 @@ class icmpHeader:
         self.checksum = bits[16:32].hex
 
 class ipBody:
-    def __init__(self, buf, protocol):
+    def doChecksum(self, buf, ip_bits):
+        bits = BitArray(buf)
+        checksum = len(bits) / 8
+        if len(bits) % 16 != 0:
+            bits.append('0x00')
+        for i in range(0, len(bits), 16):
+            checksum += bits[i: i + 16].uint
+        if checksum > 65535:    # 0xffff
+            sumArray = BitArray(hex(checksum))
+            checksum = sumArray.uint - (sumArray >> 16).uint * 65535
+        return checksum == 65535
+
+    def __init__(self, buf, protocol, ip_bits):
         if protocol == 'TCP':                # TCP
             self.tcpHeader = tcpHeader(buf)
+            self.tcpChecksum = self.doChecksum(buf, ip_bits)
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
 
@@ -202,7 +216,7 @@ class Packet:
                         for id in self.ip_ids[self.ipHeader.identification_int]:
                             self.ipBodyRaw += self.ip_packets[id].ipBodyRaw
 
-                self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol)
+                self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol, self.ipHeader.ip_bits)
 
         elif self.ethHeader.type_code == '0806':                    # ARP
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac
@@ -515,7 +529,7 @@ class Packet:
                             },
                             {
                                 'label': '校验和',
-                                'value': '0x' + self.ipBody.tcpHeader.checksum
+                                'value': '0x%s (%s)' % (self.ipBody.tcpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.tcpChecksum])
                             }
                         ]
                     })
