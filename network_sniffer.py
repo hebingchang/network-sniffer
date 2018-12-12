@@ -44,17 +44,6 @@ class ethHeader:
         self.type_code = ''.join('%02x' % compat_ord(b) for b in buf[12:14]).upper()
 
 class ipv4Header:
-    def doChecksum(self, ipHeader, checksum):
-        sum = 0
-        weight = 256
-        for index, byte in enumerate(ipHeader):
-            if index != 10 and index != 11:
-                sum += byte * weight
-                weight = {256: 1, 1: 256}[weight]
-
-        sum = (sum).to_bytes(3, 'big')
-        return checksum[0] == 255 - sum[1] and checksum[1] == 255 - sum[0] - sum[2]
-
     def __init__(self, buf):
         bits = BitArray(buf)
         self.version = bits[0:4].uint
@@ -71,7 +60,7 @@ class ipv4Header:
         self.protocol = consts.protocol_types[str(bits[72:80].uint)]
         self.protocol_code = bits[72:80].uint
         self.origin_checksum = bits[80:96].hex
-        self.checksum = self.doChecksum(buf[0:(buf[0] % 16) * 4], buf[10:12])
+        self.header_raw = bits[0: self.header_length * 8]
 
 class arpBody:
     def __init__(self, buf):
@@ -133,27 +122,8 @@ class icmpHeader:
         self.checksum = bits[16:32].hex
 
 class ipBody:
-    def doChecksum(self, buf, ip_bits, protocol):
-        bits = BitArray(buf)
-        checksum = int(len(bits) / 8)
-        if len(bits) % 16 != 0:
-            bits.append('0x00')
-        for i in range(0, len(bits), 16):
-            checksum += bits[i: i + 16].uint
-        while ip_bits.uint != 0:
-            checksum += ip_bits[-16:].uint
-            ip_bits = ip_bits >> 16
-        if protocol == 'TCP':
-            checksum += 6   # 传输层协议号
-        elif protocol == 'UDP':
-            checksum += 17
-        if checksum > 65535:    # 0xffff
-            sumArray = BitArray(hex(checksum))
-            checksum = sumArray.uint - (sumArray >> 16).uint * 65535
-        return checksum == 65535
-
     def __init__(self, buf, protocol, ip_bits):
-        if protocol == 'TCP':                # TCP
+        if protocol == 'TCP':
             self.tcpHeader = tcpHeader(buf)
             self.parameters = buf, ip_bits
         elif protocol == 'UDP':
@@ -161,6 +131,7 @@ class ipBody:
             self.parameters = buf, ip_bits
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
+            self.parameters = buf
 
 class tcpFlag:
     def __init__(self, buf):
@@ -204,6 +175,37 @@ class udpHeader:
         self.destination_port = bits[16:32].uint
         self.length = bits[32:48].uint
         self.checksum = bits[48:64].hex
+
+class verifyChecksum:
+    def doChecksum(self, bits, pseudobits, protocol):
+        if pseudobits == []:    # IP / ICMP / IGMP
+            checksum = 0
+            if len(bits) % 16 != 0:
+                bits.append('0x00')
+            for i in range(0, len(bits), 16):
+                checksum += bits[i: i + 16].uint
+        else:                   # TCP UDP
+            checksum = int(len(bits) / 8)
+            if len(bits) % 16 != 0:
+                bits.append('0x00')
+            for i in range(0, len(bits), 16):
+                checksum += bits[i: i + 16].uint
+            while pseudobits.uint != 0:
+                checksum += pseudobits[-16:].uint
+                pseudobits = pseudobits >> 16
+            if protocol == 'TCP':
+                checksum += 6  # 传输层协议号
+            elif protocol == 'UDP':
+                checksum += 17
+
+        if checksum > 65535:  # 0xffff
+            sumArray = BitArray(hex(checksum))
+            checksum = sumArray.uint - (sumArray >> 16).uint * 65535
+        return checksum == 65535
+
+    def __init__(self, buf, pseudobits, protocol):
+        bits = BitArray(buf)
+        self.verifyChecksum = self.doChecksum(bits, pseudobits, protocol)
 
 class Packet:
     def __init__(self, sniffer, pkt, id, ip_packets, ip_ids):
@@ -320,6 +322,7 @@ class Packet:
         else:
 
             if self.ipHeader.version == 4:
+                self.ipHeader.verifyChecksum = verifyChecksum(self.ipHeader.header_raw, [], '').verifyChecksum
                 data.append({
                     'label': 'IPv4 头部 / IPv4 Header',
                     'value': '',
@@ -385,7 +388,7 @@ class Packet:
                         },
                         {
                             'label': '校验和',
-                            'value': '0x%s (%s)' % (self.ipHeader.origin_checksum, '校验' + {True: '通过', False: '失败'}[self.ipHeader.checksum])
+                            'value': '0x%s (%s)' % (self.ipHeader.origin_checksum, '校验' + {True: '通过', False: '失败'}[self.ipHeader.verifyChecksum])
                         }
                     ]
                 })
@@ -462,7 +465,7 @@ class Packet:
                 data.append(slicing)
             else:
                 if self.ipHeader.protocol == 'TCP':
-                    self.ipBody.tcpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol)
+                    self.ipBody.tcpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum
                     data.append({
                         'label': 'TCP 头部 / Transmission Control Protocol Header',
                         'value': '',
@@ -552,13 +555,13 @@ class Packet:
                             },
                             {
                                 'label': '校验和',
-                                'value': '0x%s (%s)' % (self.ipBody.tcpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.tcpChecksum])
+                                'value': '0x%s (%s)' % (self.ipBody.tcpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.tcpHeader.verifyChecksum])
                             }
                         ]
                     })
 
                 elif self.ipHeader.protocol == 'UDP':
-                    self.ipBody.udpChecksum = self.ipBody.doChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol)
+                    self.ipBody.udpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum
                     data.append({
                         'label': 'UDP 头部 / User Datagram Protocol Header',
                         'value': '',
@@ -578,26 +581,31 @@ class Packet:
                             },
                             {
                                 'label': '校验和',
-                                'value': '0x%s (%s)' % (self.ipBody.udpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.udpChecksum])
+                                'value': '0x%s (%s)' % (self.ipBody.udpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.udpHeader.verifyChecksum])
                             }
                         ]
                     })
 
                 elif 'ICMP' in self.ipHeader.protocol:
+                    self.ipBody.icmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], self.ipHeader.protocol).verifyChecksum
                     data.append({
                         'label': 'ICMP 头部 / Internet Control Message Protocol Headers',
                         'value': '',
                         'bold': True,
-                        'children': [{
-                            'label': '类型',
-                            'value': '%s (%s)' % (self.ipBody.icmpHeader.type, self.ipBody.icmpHeader.type_name)
-                        }, {
-                            'label': '代码',
-                            'value': self.ipBody.icmpHeader.code
-                        }, {
-                            'label': '校验和',
-                            'value': '0x%s' % self.ipBody.icmpHeader.checksum
-                        }]
+                        'children': [
+                            {
+                                'label': '类型',
+                                'value': '%s (%s)' % (self.ipBody.icmpHeader.type, self.ipBody.icmpHeader.type_name)
+                            },
+                            {
+                                'label': '代码',
+                                'value': self.ipBody.icmpHeader.code
+                            },
+                            {
+                                'label': '校验和',
+                                'value': '0x%s (%s)' % (self.ipBody.icmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.icmpHeader.verifyChecksum])
+                            }
+                        ]
                     })
 
         return data
