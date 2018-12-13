@@ -58,6 +58,7 @@ class ipv4Header:
         self.flags = ipFlag(bits[48:64])
         self.time_to_live = bits[64:72].uint
         self.protocol = consts.protocol_types[str(bits[72:80].uint)]
+        self.protocol = consts.protocol_types[str(bits[72:80].uint)]
         self.protocol_code = bits[72:80].uint
         self.origin_checksum = bits[80:96].hex
         self.header_raw = bits[0: self.header_length * 8]
@@ -131,7 +132,12 @@ class ipBody:
             self.parameters = buf, ip_bits
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
-            self.parameters = buf
+            if 'IPv6' in protocol:
+                self.parameters = buf, ip_bits
+            else:
+                self.parameters = buf
+        elif protocol == 'IGMP':
+            self.igmpHeader = igmpHeader(buf)
 
 class tcpFlag:
     def __init__(self, buf):
@@ -176,15 +182,23 @@ class udpHeader:
         self.length = bits[32:48].uint
         self.checksum = bits[48:64].hex
 
+class igmpHeader:
+    def l(self, bits):
+        return len(bits) // 8
+
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.length = self.l(bits)
+
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
-        if pseudobits == []:    # IP / ICMP / IGMP
+        if pseudobits == []:    # IP / IPv4 - ICMP / IGMP
             checksum = 0
             if len(bits) % 16 != 0:
                 bits.append('0x00')
             for i in range(0, len(bits), 16):
                 checksum += bits[i: i + 16].uint
-        else:                   # TCP UDP
+        else:                   # TCP / UDP / IPv6 - ICMP
             checksum = int(len(bits) / 8)
             if len(bits) % 16 != 0:
                 bits.append('0x00')
@@ -197,6 +211,8 @@ class verifyChecksum:
                 checksum += 6  # 传输层协议号
             elif protocol == 'UDP':
                 checksum += 17
+            elif 'ICMP' in protocol:
+                checksum += 58
 
         if checksum > 65535:  # 0xffff
             sumArray = BitArray(hex(checksum))
@@ -230,7 +246,7 @@ class Packet:
             print('ipHeader parse complete.')
 
             self.source, self.destination, self.protocol = self.ipHeader.source_ip, self.ipHeader.dest_ip, self.ipHeader.protocol
-            self.ipBodyRaw = self.__ipData[self.ipHeader.header_length:]
+            self.ipBodyRaw = self.__ipData[self.ipHeader.header_length: self.ipHeader.total_length]
 
             if self.ethHeader.type_code == '0800':
                 if not self.ipHeader.flags.more_fragment:
@@ -587,7 +603,10 @@ class Packet:
                     })
 
                 elif 'ICMP' in self.ipHeader.protocol:
-                    self.ipBody.icmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], self.ipHeader.protocol).verifyChecksum
+                    if 'IPv6' in self.ipHeader.protocol:
+                        self.ipBody.icmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum
+                    else:
+                        self.ipBody.icmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
                     data.append({
                         'label': 'ICMP 头部 / Internet Control Message Protocol Headers',
                         'value': '',
@@ -604,6 +623,19 @@ class Packet:
                             {
                                 'label': '校验和',
                                 'value': '0x%s (%s)' % (self.ipBody.icmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.icmpHeader.verifyChecksum])
+                            }
+                        ]
+                    })
+
+                elif self.ipHeader.protocol == 'IGMP':
+                    data.append({
+                        'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
+                        'value': '',
+                        'bold': True,
+                        'children': [
+                            {
+                                'label': '长度',
+                                'value': self.ipBody.igmpHeader.length
                             }
                         ]
                     })
