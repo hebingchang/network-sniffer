@@ -4,6 +4,10 @@ import consts, pcap
 from bitstring import BitArray
 import ipaddress
 from netaddr import *
+try:
+    from http_parser.parser import HttpParser
+except ImportError:
+    from http_parser.pyparser import HttpParser
 
 class Sniffer:
     def __init__(self, sniffer):
@@ -24,8 +28,6 @@ class Sniffer:
                 self.ip_ids[packet.ipHeader.identification_int] = [packet.id]
 
         return packet
-
-
 
 class ipFlag:
     def __init__(self, flag):
@@ -127,6 +129,7 @@ class ipBody:
     def __init__(self, buf, protocol, ip_bits):
         if protocol == 'TCP':
             self.tcpHeader = tcpHeader(buf)
+            self.tcpBody = tcpBody(buf[self.tcpHeader.header_length:])
             self.parameters = buf, ip_bits
         elif protocol == 'UDP':
             self.udpHeader = udpHeader(buf)
@@ -175,6 +178,13 @@ class tcpHeader:
         self.checksum = bits[128:144].hex
         self.urgent_pointer = bits[144:160].uint
         # self.options = tcpOptions(bits[160:self.header_length*8])
+
+class tcpBody:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.has_body = bool(len(buf))
+        self.raw = buf.decode('utf-8', "ignore")
+        self.buf = buf
 
 class udpHeader:
     def __init__(self, buf):
@@ -591,6 +601,29 @@ class Packet:
                             }
                         ]
                     })
+
+                    if self.ipBody.tcpBody.has_body:
+                        try:
+                            p = HttpParser()
+                            recved = len(self.ipBody.tcpBody.buf)
+                            nparsed = p.execute(self.ipBody.tcpBody.buf, recved)
+                            assert nparsed == recved
+
+                            print(p.get_headers())
+                        except AssertionError:
+                            print('NOT HTTP')
+
+                        data.append({
+                            'label': 'TCP 数据 / Data',
+                            'value': '',
+                            'bold': True,
+                            'children': [
+                                {
+                                    'label': '数据',
+                                    'value': self.ipBody.tcpBody.raw
+                                }
+                            ]
+                        })
 
                 elif self.ipHeader.protocol == 'UDP':
                     self.ipBody.udpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum

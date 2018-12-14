@@ -2,12 +2,8 @@ from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
 
-import pcap, sys
+import pcap, sys, queue, json, os, netifaces, psutil
 import network_sniffer
-import queue
-import json
-import os
-import netifaces, psutil
 from anytree.importer import JsonImporter
 from anytree import RenderTree
 from prettytable import PrettyTable
@@ -60,8 +56,6 @@ class SnifferThread(QThread):
                     break
         except OSError as err:
             self.signal.emit((err, None))
-
-
 
 class parseController(QObject):
     def __init__(self, *args, **kwags):
