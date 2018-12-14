@@ -145,7 +145,8 @@ class ipBody:
                 self.igmpHeader = igmpHeader(buf)
                 self.parameters = buf
             else:
-                print('IGMPv3: %s' % len(buf))
+                self.igmpv3Header = igmpv3Header(buf)
+                self.parameters = buf
 
 class tcpFlag:
     def __init__(self, buf):
@@ -202,9 +203,15 @@ class igmpHeader:
         bits = BitArray(buf)
         self.type = bits[0: 8].hex
         self.type_name = consts.igmp_types[bits[0:8].uint]
-        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint, bits[8: 16].hex
+        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint * 0.1, bits[8: 16].hex
         self.checksum = bits[16: 32].hex
         self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
+
+class igmpv3Header:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.type = bits[0: 8].hex
+        self.checksum = bits[16: 32].hex
 
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
@@ -666,31 +673,49 @@ class Packet:
                         ]
                     })
 
-                elif 'IGMP' in self.ipHeader.protocol and self.ipHeader.payload_length == 8:
-                    self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
-                    data.append({
-                        'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
-                        'value': '',
-                        'bold': True,
-                        'children': [
-                            {
-                                'label': '类型',
-                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.type, self.ipBody.igmpHeader.type_name)
-                            },
-                            {
-                                'label': '最大响应时延',
-                                'value': '%s 秒（0x%s）' % (self.ipBody.igmpHeader.maxRespTime, self.ipBody.igmpHeader.maxRespTimeHex)
-                            },
-                            {
-                                'label': '校验和',
-                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpHeader.verifyChecksum])
-                            },
-                            {
-                                'label': '组地址',
-                                'value': self.ipBody.igmpHeader.groupAddress
-                            }
-                        ]
-                    })
+                elif 'IGMP' in self.ipHeader.protocol:
+                    if self.ipHeader.payload_length == 8:
+                        self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
+                        data.append({
+                            'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
+                            'value': '',
+                            'bold': True,
+                            'children': [
+                                {
+                                    'label': '类型',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpHeader.type, self.ipBody.igmpHeader.type_name)
+                                },
+                                {
+                                    'label': '最大响应时延',
+                                    'value': '%s 秒(0x%s)' % (self.ipBody.igmpHeader.maxRespTime, self.ipBody.igmpHeader.maxRespTimeHex)
+                                },
+                                {
+                                    'label': '校验和',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpHeader.verifyChecksum])
+                                },
+                                {
+                                    'label': '组地址',
+                                    'value': self.ipBody.igmpHeader.groupAddress
+                                }
+                            ]
+                        })
+                    else:
+                        self.ipBody.igmpv3Header.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
+                        data.append({
+                            'label': 'IGMPv3 头部 / Internet Group Management Protocol Version 3 Headers',
+                            'value': '',
+                            'bold': True,
+                            'children': [
+                                {
+                                    'label': '类型',
+                                    'value': '0x%s' % self.ipBody.igmpv3Header.type
+                                },
+                                {
+                                    'label': '校验和',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpv3Header.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpv3Header.verifyChecksum])
+                                }
+                            ]
+                        })
 
         return data
 
