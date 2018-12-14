@@ -95,6 +95,7 @@ class ipv6Header:
         self.next_header = consts.protocol_types[str(bits[48:56].uint)]
         self.protocol = consts.protocol_types[str(bits[48:56].uint)]
         self.next_header_code = bits[48:56].uint
+        self.total_length = self.header_length + self.payload_length
 
         self.hop_limit = bits[56:64].uint
         self.source_ip = str(ipaddress.IPv6Address(bits[64:64 + 128].bytes))
@@ -138,6 +139,7 @@ class ipBody:
                 self.parameters = buf
         elif protocol == 'IGMP':
             self.igmpHeader = igmpHeader(buf)
+            self.parameters = buf
 
 class tcpFlag:
     def __init__(self, buf):
@@ -183,12 +185,26 @@ class udpHeader:
         self.checksum = bits[48:64].hex
 
 class igmpHeader:
-    def l(self, bits):
-        return len(bits) // 8
-
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.length = self.l(bits)
+        self.length = len(bits) // 8    # byte
+        if bits[0:4].uint == 1:
+            self.version = 1
+            # self.type = bits[4: 8].uint
+            # self.checksum = bits[16: 32].hex
+            # self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
+        else:
+            if self.length == 8:
+                self.version = 2
+                self.type = bits[0: 8].hex
+                if bits[8: 16] == '0x64':
+                    self.maxRespTime = 10
+                else:
+                    self.maxRespTime = bits[8: 16].uint * 0.1
+                self.checksum = bits[16: 32].hex
+                self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
+            else:
+                self.version = 3
 
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
@@ -627,15 +643,32 @@ class Packet:
                         ]
                     })
 
-                elif self.ipHeader.protocol == 'IGMP':
+                elif self.ipHeader.protocol == 'IGMP' and self.ipBody.igmpHeader.version == 2:
+                    self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
                     data.append({
                         'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
                         'value': '',
                         'bold': True,
                         'children': [
                             {
-                                'label': '长度',
-                                'value': self.ipBody.igmpHeader.length
+                                'label': '版本',
+                                'value': 'v%s' % self.ipBody.igmpHeader.version
+                            },
+                            {
+                                'label': '类型',
+                                'value': '0x%s' % self.ipBody.igmpHeader.type
+                            },
+                            {
+                                'label': '最大响应时延',
+                                'value': '%s秒' % self.ipBody.igmpHeader.maxRespTime
+                            },
+                            {
+                                'label': '校验和',
+                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpHeader.verifyChecksum])
+                            },
+                            {
+                                'label': '组地址',
+                                'value': self.ipBody.igmpHeader.groupAddress
                             }
                         ]
                     })
