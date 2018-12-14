@@ -53,38 +53,44 @@ Window {
     }
 
     function toggleMenu () {
-        console.log(btnSavePacket.opacity)
+        btnSavePacket.visible = true
+        btnRebuildTCP.visible = true
+        btnSearch.visible = true
+
         btnSavePacket.opacity = 1 - btnSavePacket.opacity
         btnRebuildTCP.opacity = 1 - btnRebuildTCP.opacity
+        btnSearch.opacity = 1 - btnSearch.opacity
+
         plusImage.rotation = 225 - plusImage.rotation
         ease1.duration = 2500 - ease1.duration
         ease2.duration = 2500 - ease2.duration
+        ease3.duration = 2500 - ease3.duration
     }
 
     id: mainWindow
     objectName: "mainWindow"
     visible: true
     width: 800
-    height: 500
+    height: 550
     title: qsTr("Sniffer")
 
     Text {
         id: lblDevice
-        x: 12
-        y: 11
+        x: 20
+        y: 10
         text: qsTr("选择网卡:")
     }
 
     Button {
         id: btnStart
         objectName: "btnStart"
-        x: 394
-        y: 5
+        x: 696
+        y: 42
         width: 96
         height: 27
         text: qsTr("开始抓包")
         anchors.right: parent.right
-        anchors.rightMargin: 110
+        anchors.rightMargin: 8
         focusPolicy: Qt.TabFocus
         display: AbstractButton.TextOnly
     }
@@ -95,9 +101,9 @@ Window {
         y: 5
         height: 28
         anchors.left: parent.left
-        anchors.leftMargin: 80
+        anchors.leftMargin: 93
         anchors.right: parent.right
-        anchors.rightMargin: 212
+        anchors.rightMargin: 122
         model: ListModel {
             id: devices
         }
@@ -122,7 +128,7 @@ Window {
     Label {
         id: lblSniffering
         x: 696
-        y: 42
+        y: 80
         width: 96
         height: 16
         color: "#f04444"
@@ -153,8 +159,9 @@ Window {
 
     GroupBox {
         id: groupPacket
-        y: 42
-        height: 0.42 * mainWindow.height
+        x: 8
+        y: 80
+        height: 0.36 * mainWindow.height
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.left: parent.left
@@ -331,7 +338,7 @@ Window {
     GroupBox {
         id: groupParse
         y: 255
-        height: mainWindow.height - groupPacket.height - 60
+        height: mainWindow.height - groupPacket.height - 100
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.left: parent.left
@@ -379,6 +386,11 @@ Window {
             properties: "opacity"
             easing.type: Easing.InOutQuad
             duration: 1000
+            onRunningChanged: {
+                if (btnSavePacket.opacity == 0 && (!running)) {
+                    btnSavePacket.visible = false
+                }
+            }
         } }
 
         topPadding: 0
@@ -389,6 +401,46 @@ Window {
         onClicked: savePacketDialog()
         ToolTip.visible: hovered
         ToolTip.text: qsTr("导出数据包文本")
+        opacity: 0
+    }
+
+    RoundButton {
+        id: btnSearch
+        x: 753
+        y: 384
+        width: 30
+        height: 30
+        text: qsTr("")
+        leftPadding: 0
+        z: 999
+        anchors.right: parent.right
+        anchors.bottomMargin: 136
+        Image {
+            id: plusImage3
+            width: parent.width / 2.5
+            height: parent.height / 2.5
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: "images/search.svg"
+            anchors.verticalCenter: parent.verticalCenter
+        }
+        Behavior on opacity { PropertyAnimation {
+            id: ease3
+            properties: "opacity"
+            easing.type: Easing.InOutQuad
+            duration: 2000
+            onRunningChanged: {
+                if (btnSearch.opacity == 0 && (!running)) {
+                    btnSearch.visible = false
+                }
+            }
+        } }
+        topPadding: 0
+        anchors.rightMargin: 17
+        rightPadding: 0
+        anchors.bottom: parent.bottom
+        bottomPadding: 5
+        ToolTip.visible: hovered
+        ToolTip.text: qsTr("搜索数据包")
         opacity: 0
     }
 
@@ -416,6 +468,11 @@ Window {
             properties: "opacity"
             easing.type: Easing.InOutQuad
             duration: 1500
+            onRunningChanged: {
+                if (btnRebuildTCP.opacity == 0 && (!running)) {
+                    btnRebuildTCP.visible = false
+                }
+            }
         } }
         topPadding: 0
         anchors.rightMargin: 17
@@ -446,6 +503,26 @@ Window {
         id: messageDialog
         title: ""
         text: ""
+    }
+
+    Text {
+        id: lblDevice1
+        x: 20
+        y: 46
+        text: qsTr("过滤器:")
+    }
+
+    TextField {
+        id: txtFilter
+        x: 93
+        y: 42
+        width: 585
+        height: 28
+        text: qsTr("")
+        opacity: 0.8
+        onTextChanged: {
+            parse.setFilter(txtFilter.text)
+        }
     }
 }
 
