@@ -318,6 +318,14 @@ Window {
         anchors.right: parent.right
         anchors.rightMargin: 12
 
+        onHoveredChanged: {
+            if (hovered) {
+                btnMenu.opacity = 1
+            } else {
+                btnMenu.opacity = 0.5
+            }
+        }
+
         Image {
             id: plusImage
             width: parent.width / 2.5

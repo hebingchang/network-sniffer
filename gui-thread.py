@@ -17,6 +17,7 @@ importer = JsonImporter()
 #somewhere accessible to both:
 callback_queue = queue.Queue()
 listening = False
+filter = ''
 packets = list()
 
 class SnifferThread(QThread):
