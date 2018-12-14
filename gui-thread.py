@@ -2,12 +2,8 @@ from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
 
-import pcap, sys
+import pcap, sys, queue, json, os, netifaces, psutil
 import network_sniffer
-import queue
-import json
-import os
-import netifaces, psutil
 from anytree.importer import JsonImporter
 from anytree import RenderTree
 from prettytable import PrettyTable
@@ -17,6 +13,7 @@ importer = JsonImporter()
 #somewhere accessible to both:
 callback_queue = queue.Queue()
 listening = False
+filter = ''
 packets = list()
 
 class SnifferThread(QThread):
@@ -29,33 +26,36 @@ class SnifferThread(QThread):
 
     # run method gets called when we start the thread
     def run(self):
-        global listening
+        global listening, filter
         print("Started. " + self.dev)
         addr = lambda pkt, offset: '.'.join(str(pkt[i]) for i in range(offset, offset + 4))
 
         sniffer = pcap.pcap(name=self.dev, promisc=True, immediate=True, timeout_ms=50)
         # sniffer.setfilter('src host 10.162.81.65')
-        bug_sniffer = network_sniffer.Sniffer(sniffer)
+        try:
+            sniffer.setfilter(filter)
+            bug_sniffer = network_sniffer.Sniffer(sniffer)
 
-        for ts, pkt in sniffer:
-            self.packet_count += 1
-            packet = bug_sniffer.packetArrive(pkt)
-            if packet.source == None:
-                print('Packet not supported.')
-            else:
-                data = {
-                    'id': packet.id,
-                    'source': packet.source,
-                    'destination': packet.destination,
-                    'protocol': packet.protocol,
-                    'length': packet.length
-                }
+            for ts, pkt in sniffer:
+                self.packet_count += 1
+                packet = bug_sniffer.packetArrive(pkt)
+                if packet.source == None:
+                    print('Packet not supported.')
+                else:
+                    data = {
+                        'id': packet.id,
+                        'source': packet.source,
+                        'destination': packet.destination,
+                        'protocol': packet.protocol,
+                        'length': packet.length
+                    }
+                    print(data)
+                    self.signal.emit((data, packet))
 
-                print(data)
-                self.signal.emit((data, packet))
-
-            if listening == False:
-                break
+                if listening == False:
+                    break
+        except OSError as err:
+            self.signal.emit((err, None))
 
 class parseController(QObject):
     def __init__(self, *args, **kwags):
@@ -65,6 +65,11 @@ class parseController(QObject):
     def onItemChange(self, index):
         data = packets[index].parse()
         return json.dumps(data)
+
+    @pyqtSlot(str)
+    def setFilter(self, spec_filter):
+        global filter
+        filter = spec_filter
 
     @pyqtSlot(int, str)
     def savePacket(self, index, path):
@@ -130,7 +135,7 @@ class snifferGui:
         # sys.exit(app.exec_())
 
     def myFunction(self):
-        global listening
+        global listening, filter
         if (self.sniffer_status):
             self.sniffer_status = False
             self.root.stopSnifferAction()
@@ -145,8 +150,12 @@ class snifferGui:
             self.sniffer_thread.start()  # Finally starts the thread
 
     def addItem(self, data):
-        packets.append(data[1])
-        self.root.appendPacketModel(data[0])
+        if data[1] == None:
+            self.root.msgbox('错误', "OSError: {0}".format(data[0]))
+            self.myFunction()
+        else:
+            packets.append(data[1])
+            self.root.appendPacketModel(data[0])
 
     def getDev(self, index):
         self.dev = self.devs[index]
