@@ -50,6 +50,7 @@ class SnifferThread(QThread):
                     'protocol': packet.protocol,
                     'length': packet.length
                 }
+
                 print(data)
                 self.signal.emit((data, packet))
 
