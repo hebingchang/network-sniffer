@@ -133,3 +133,14 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/icmp-par
             for idx in range(int(key[0]), int(key[1]) + 1):
                 icmp_types[str(idx)] = row[1]
 
+igmp_types = dict()
+with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/igmp-type-numbers-1.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',')
+    next(csvreader)
+    for row in csvreader:
+        key = row[0].split('-')
+        if len(key) == 1:
+            igmp_types[int(row[0], 16)] = row[1]
+        else:
+            for idx in range(int(key[0], 16), int(key[1], 16) + 1):
+                igmp_types[idx] = row[1]

@@ -54,16 +54,16 @@ class ipv4Header:
         self.dest_ip = str(ipaddress.IPv4Address(bits[96 + 32:96 + 64].bytes))
         self.ip_bits = bits[96:96 + 64]
         self.differentiated_services = bits[8:16].hex
-        self.total_length = bits[16:32].uint    # bit
+        self.total_length = bits[16:32].uint    # bytes
         self.identification = bits[32:48].hex
         self.identification_int = bits[32:48].uint
         self.flags = ipFlag(bits[48:64])
         self.time_to_live = bits[64:72].uint
         self.protocol = consts.protocol_types[str(bits[72:80].uint)]
-        self.protocol = consts.protocol_types[str(bits[72:80].uint)]
         self.protocol_code = bits[72:80].uint
         self.origin_checksum = bits[80:96].hex
         self.header_raw = bits[0: self.header_length * 8]
+        self.payload_length = self.total_length - self.header_length
 
 class arpBody:
     def __init__(self, buf):
@@ -140,9 +140,12 @@ class ipBody:
                 self.parameters = buf, ip_bits
             else:
                 self.parameters = buf
-        elif protocol == 'IGMP':
-            self.igmpHeader = igmpHeader(buf)
-            self.parameters = buf
+        elif 'IGMP' in protocol:
+            if int(len(buf)) == 8:
+                self.igmpHeader = igmpHeader(buf)
+                self.parameters = buf
+            else:
+                print('IGMPv3: %s' % len(buf))
 
 class tcpFlag:
     def __init__(self, buf):
@@ -197,24 +200,11 @@ class udpHeader:
 class igmpHeader:
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.length = len(bits) // 8    # byte
-        if bits[0:4].uint == 1:
-            self.version = 1
-            # self.type = bits[4: 8].uint
-            # self.checksum = bits[16: 32].hex
-            # self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
-        else:
-            if self.length == 8:
-                self.version = 2
-                self.type = bits[0: 8].hex
-                if bits[8: 16] == '0x64':
-                    self.maxRespTime = 10
-                else:
-                    self.maxRespTime = bits[8: 16].uint * 0.1
-                self.checksum = bits[16: 32].hex
-                self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
-            else:
-                self.version = 3
+        self.type = bits[0: 8].hex
+        self.type_name = consts.igmp_types[bits[0:8].uint]
+        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint, bits[8: 16].hex
+        self.checksum = bits[16: 32].hex
+        self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
 
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
@@ -676,7 +666,7 @@ class Packet:
                         ]
                     })
 
-                elif self.ipHeader.protocol == 'IGMP' and self.ipBody.igmpHeader.version == 2:
+                elif 'IGMP' in self.ipHeader.protocol and self.ipHeader.payload_length == 8:
                     self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
                     data.append({
                         'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
@@ -684,16 +674,12 @@ class Packet:
                         'bold': True,
                         'children': [
                             {
-                                'label': '版本',
-                                'value': 'v%s' % self.ipBody.igmpHeader.version
-                            },
-                            {
                                 'label': '类型',
-                                'value': '0x%s' % self.ipBody.igmpHeader.type
+                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.type, self.ipBody.igmpHeader.type_name)
                             },
                             {
                                 'label': '最大响应时延',
-                                'value': '%s秒' % self.ipBody.igmpHeader.maxRespTime
+                                'value': '%s 秒（0x%s）' % (self.ipBody.igmpHeader.maxRespTime, self.ipBody.igmpHeader.maxRespTimeHex)
                             },
                             {
                                 'label': '校验和',
