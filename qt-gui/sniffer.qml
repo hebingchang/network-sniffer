@@ -7,6 +7,8 @@ import QtGraphicalEffects 1.0
 import QtQuick.Dialogs 1.3
 
 Window {
+    property bool menuOpen: false
+
     function setDevModel(dev) {
         comboDevice.model = dev
     }
@@ -69,14 +71,29 @@ Window {
         btnRebuildTCP.visible = true
         btnSearch.visible = true
 
-        btnSavePacket.opacity = 1 - btnSavePacket.opacity
-        btnRebuildTCP.opacity = 1 - btnRebuildTCP.opacity
-        btnSearch.opacity = 1 - btnSearch.opacity
+        if (menuOpen) {
+            menuOpen = false
+            btnSavePacket.opacity = 0
+            btnRebuildTCP.opacity = 0
+            btnSearch.opacity = 0
 
-        plusImage.rotation = 225 - plusImage.rotation
-        ease1.duration = 2500 - ease1.duration
-        ease2.duration = 2500 - ease2.duration
-        ease3.duration = 2500 - ease3.duration
+            plusImage.rotation = 0
+
+            ease1.duration = 600
+            ease2.duration = 900
+            ease3.duration = 1200
+        } else {
+            menuOpen = true
+            btnSavePacket.opacity = 1
+            btnRebuildTCP.opacity = 1
+            btnSearch.opacity = 1
+
+            plusImage.rotation = 225
+
+            ease1.duration = 1200
+            ease2.duration = 900
+            ease3.duration = 600
+        }
     }
 
     id: mainWindow
@@ -320,6 +337,7 @@ Window {
         x: 448
         y: 442
         text: qsTr("")
+        opacity: 0.5
         z: 999
         rightPadding: 0
         leftPadding: 0
@@ -385,7 +403,7 @@ Window {
         width: 30
         height: 30
         text: qsTr("")
-        visible: true
+        visible: false
         z: 999
         leftPadding: 0
         anchors.right: parent.right
@@ -405,7 +423,7 @@ Window {
             id: ease1
             properties: "opacity"
             easing.type: Easing.InOutQuad
-            duration: 1000
+            duration: 600
             onRunningChanged: {
                 if (btnSavePacket.opacity == 0 && (!running)) {
                     btnSavePacket.visible = false
@@ -431,6 +449,7 @@ Window {
         width: 30
         height: 30
         text: qsTr("")
+        visible: false
         leftPadding: 0
         z: 999
         anchors.right: parent.right
@@ -447,7 +466,7 @@ Window {
             id: ease3
             properties: "opacity"
             easing.type: Easing.InOutQuad
-            duration: 2000
+            duration: 1200
             onRunningChanged: {
                 if (btnSearch.opacity == 0 && (!running)) {
                     btnSearch.visible = false
@@ -471,6 +490,7 @@ Window {
         width: 30
         height: 30
         text: qsTr("")
+        visible: false
         leftPadding: 0
         z: 999
         anchors.right: parent.right
@@ -487,7 +507,7 @@ Window {
             id: ease2
             properties: "opacity"
             easing.type: Easing.InOutQuad
-            duration: 1500
+            duration: 900
             onRunningChanged: {
                 if (btnRebuildTCP.opacity == 0 && (!running)) {
                     btnRebuildTCP.visible = false

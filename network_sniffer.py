@@ -607,6 +607,7 @@ class Packet:
 
                     if self.id in packet_id_struct:
                         tmp = []
+                        http_payload = None
                         for p_id in packet_id_struct[self.id]:
                             tmp.append({
                                     'value': '',
@@ -614,7 +615,7 @@ class Packet:
                                 })
 
                         if self.id in tcp_bodies:
-                            print(tcp_bodies[self.id]['data'].decode('utf-8', 'ignore'))
+                            # print(tcp_bodies[self.id]['data'].decode('utf-8', 'ignore'))
                             children = [
                                 {
                                     'label': '该包是 TCP 分段的最后一段, 可以通过右下角按钮「导出 TCP 分段数据」.',
@@ -628,6 +629,62 @@ class Packet:
                                     'children': tmp
                                 }
                             ]
+
+                            try:
+                                p = HttpParser()
+                                recved = len(tcp_bodies[self.id]['data'])
+                                nparsed = p.execute(tcp_bodies[self.id]['data'], recved)
+                                assert nparsed == recved
+
+                                headers = []
+                                for header in p.get_headers():
+                                    headers.append({
+                                        'label': header,
+                                        'value': p.get_headers()[header]
+                                    })
+
+                                print(p.get_path(), p.get_url(), p.get_fragment(),
+                                      p.get_method(), p.get_query_string(), p.get_status_code(),
+                                      p.get_wsgi_environ())
+
+                                http_payload = [
+                                    {
+                                        'label': 'HTTP 版本',
+                                        'value': '%s.%s' % (p.get_version()[0], p.get_version()[1])
+                                    },
+                                    {
+                                        'label': 'HTTP 头部',
+                                        'value': '',
+                                        'children': headers
+                                    }
+                                ]
+
+                                if len(p.get_url()) != 0:
+                                    http_payload.append({
+                                        'label': '请求方式',
+                                        'value': p.get_method()
+                                    })
+                                    http_payload.append({
+                                        'label': '路径',
+                                        'value': p.get_url()
+                                    })
+                                    http_payload.append({
+                                        'label': '请求参数',
+                                        'value': p.get_query_string()
+                                    })
+                                    http_payload.append({
+                                        'label': '主机名',
+                                        'value': p.get_wsgi_environ()['HTTP_HOST']
+                                    })
+                                else:
+                                    http_payload.append({
+                                        'label': '状态码',
+                                        'value': p.get_status_code()
+                                    })
+
+                            except AssertionError:
+                                pass
+
                         else:
                             children = [{
                                 'label': '共 %s 个分段' % len(tmp),
@@ -642,6 +699,14 @@ class Packet:
                             'bold': True,
                             'children': children
                         })
+
+                        if http_payload != None:
+                            data.append({
+                                'label': 'HTTP 数据 / HTTP Data',
+                                'value': '',
+                                'bold': True,
+                                'children': http_payload
+                            })
 
                     '''
                     if self.ipBody.tcpBody.has_body:
