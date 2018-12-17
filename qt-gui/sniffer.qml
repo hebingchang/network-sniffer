@@ -38,11 +38,23 @@ Window {
         packetList.currentIndex = index
     }
 
-    function savePacketDialog () {
-        if (packetList.currentIndex == -1) {
-            msgbox('错误', '未选择数据包。')
-        } else {
-            fileDialog.visible = true
+    function savePacketDialog (type) {
+        if (type === 0) {                                    // 另存为数据包
+            if (packetList.currentIndex == -1) {
+                msgbox('错误', '未选择数据包。')
+            } else {
+                fileDialog.title = '另存为数据包'
+                fileDialog.nameFilters = ["文本文档 (*.txt)"]
+                fileDialog.visible = true
+            }
+        } else if (type === 1) {                                    // 保存TCP
+            if (packetList.currentIndex == -1) {
+                msgbox('错误', '未选择数据包。')
+            } else {
+                fileDialog.title = '保存 TCP 分段数据'
+                fileDialog.nameFilters = ["所有文件 (*.*)"]
+                fileDialog.visible = true
+            }
         }
     }
 
@@ -406,7 +418,7 @@ Window {
         rightPadding: 0
         anchors.bottom: parent.bottom
         bottomPadding: 5
-        onClicked: savePacketDialog()
+        onClicked: savePacketDialog(0)
         ToolTip.visible: hovered
         ToolTip.text: qsTr("导出数据包文本")
         opacity: 0
@@ -488,7 +500,8 @@ Window {
         anchors.bottom: parent.bottom
         bottomPadding: 5
         ToolTip.visible: hovered
-        ToolTip.text: qsTr("导出 TCP 分片数据")
+        onClicked: savePacketDialog(1)
+        ToolTip.text: qsTr("导出 TCP 分段数据")
         opacity: 0
     }
 
@@ -497,8 +510,14 @@ Window {
         title: "另存为数据包"
         folder: shortcuts.home
         nameFilters: [ "文本文档 (*.txt)" ]
+
         onAccepted: {
-            parse.savePacket(packetList.currentIndex, fileDialog.fileUrls)
+            if (fileDialog.title === '另存为数据包') {
+                parse.savePacket(packetList.currentIndex, fileDialog.fileUrls)
+            } else {
+                let ret = parse.saveTCP(packetList.currentIndex, fileDialog.fileUrls)
+                msgbox('提示', ret)
+            }
         }
         onRejected: {
             console.log("Canceled")

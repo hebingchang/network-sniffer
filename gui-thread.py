@@ -7,6 +7,10 @@ import network_sniffer
 from anytree.importer import JsonImporter
 from anytree import RenderTree
 from prettytable import PrettyTable
+try:
+    from http_parser.parser import HttpParser
+except ImportError:
+    from http_parser.pyparser import HttpParser
 
 importer = JsonImporter()
 
@@ -90,6 +94,37 @@ class parseController(QObject):
             t.add_row([pre + node.label, node.value])
         f.write(str(t))
         f.close()
+
+    @pyqtSlot(int, str, result=str)
+    def saveTCP(self, index, path):
+        if os.name == 'nt':
+            path = path.replace('file://', '')[1:]
+        else:
+            path = path.replace('file://', '')
+
+        if (index + 1) in network_sniffer.getTcpBodies():
+            f = open(path, 'wb')
+
+            try:
+                p = HttpParser()
+                recved = len(network_sniffer.getTcpBodies()[index + 1]['data'])
+                nparsed = p.execute(network_sniffer.getTcpBodies()[index + 1]['data'], recved)
+                assert nparsed == recved
+                f.write(p.recv_body())
+
+                ret = '解析到 HTTP 报文，已保存 HTTP 数据。'
+            except AssertionError:
+                f.write(network_sniffer.getTcpBodies()[index + 1]['data'])
+
+                ret = '未解析到 HTTP 报文，已保存 TCP 数据。'
+
+            f.close()
+
+            return ret
+
+        else:
+            return '数据包不是 TCP 分段的最后一段。'
+
 
 class snifferGui:
     def __init__(self, argv):

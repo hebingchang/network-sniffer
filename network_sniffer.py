@@ -9,7 +9,9 @@ try:
 except ImportError:
     from http_parser.pyparser import HttpParser
 from tcp_packet import tcpPacket, tcp_bodies, packet_id_struct
-from kaitaistruct import KaitaiStream, BytesIO
+
+def getTcpBodies():
+    return tcp_bodies
 
 class Sniffer:
     def __init__(self, sniffer):
@@ -602,11 +604,44 @@ class Packet:
                         ]
                     })
 
-                    if self.id in packet_id_struct:
-                        print(packet_id_struct[self.id])
 
-                    if self.id in tcp_bodies:
-                        print(tcp_bodies[self.id]['data'].decode('utf-8', 'ignore'))
+                    if self.id in packet_id_struct:
+                        tmp = []
+                        for p_id in packet_id_struct[self.id]:
+                            tmp.append({
+                                    'value': '',
+                                    'label': '#%s' % p_id
+                                })
+
+                        if self.id in tcp_bodies:
+                            print(tcp_bodies[self.id]['data'].decode('utf-8', 'ignore'))
+                            children = [
+                                {
+                                    'label': '该包是 TCP 分段的最后一段, 可以通过右下角按钮「导出 TCP 分段数据」.',
+                                    'value': '',
+                                    'bold': True
+                                },
+                                {
+                                    'label': '共 %s 个分段' % len(tmp),
+                                    'value': '',
+                                    'bold': True,
+                                    'children': tmp
+                                }
+                            ]
+                        else:
+                            children = [{
+                                'label': '共 %s 个分段' % len(tmp),
+                                'value': '',
+                                'bold': True,
+                                'children': tmp
+                            }]
+
+                        data.append({
+                            'label': 'TCP 数据 / TCP Payload',
+                            'value': '',
+                            'bold': True,
+                            'children': children
+                        })
 
                     '''
                     if self.ipBody.tcpBody.has_body:
