@@ -670,7 +670,7 @@ class Packet:
                             'value': '',
                             'children': options
                         })
-                        
+
                     data.append(tcp_header)
 
                     if self.ipBody.tcpBody.has_body:
