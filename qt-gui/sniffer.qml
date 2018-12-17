@@ -480,6 +480,10 @@ Window {
         bottomPadding: 5
         ToolTip.visible: hovered
         ToolTip.text: qsTr("搜索数据包")
+        onClicked: {
+            parse.searchPacket(packetList.currentIndex, fileDialog.fileUrls)
+        }
+
         opacity: 0
     }
 
@@ -550,6 +554,50 @@ Window {
         id: messageDialog
         title: ""
         text: ""
+    }
+
+    Dialog {
+        id: searchPrompt
+        visible: true
+        title: "搜索数据包"
+
+        contentItem: Rectangle {
+            implicitWidth: 450
+            implicitHeight: 100
+            Text {
+                text: "关键字: "
+                // anchors.centerIn: parent
+                x: 10
+                y: 10
+            }
+            TextField {
+                id: txtKeyword
+                x: 60
+                y: 6
+                width: 300
+                height: 28
+                text: qsTr("")
+                opacity: 0.8
+            }
+            Button {
+                id: btnDoSearch
+                objectName: "btnStart"
+                x: 376
+                y: 6
+                width: 60
+                height: 28
+                text: qsTr("搜索")
+                display: AbstractButton.TextOnly
+            }
+
+            Text {
+                id: txtResult
+                text: ""
+                x: 10
+                y: 40
+            }
+
+        }
     }
 
     Text {
