@@ -481,7 +481,7 @@ Window {
         ToolTip.visible: hovered
         ToolTip.text: qsTr("搜索数据包")
         onClicked: {
-            parse.searchPacket(packetList.currentIndex, fileDialog.fileUrls)
+            searchPrompt.visible = true
         }
 
         opacity: 0
@@ -558,7 +558,7 @@ Window {
 
     Dialog {
         id: searchPrompt
-        visible: true
+        visible: false
         title: "搜索数据包"
 
         contentItem: Rectangle {
@@ -588,6 +588,24 @@ Window {
                 height: 28
                 text: qsTr("搜索")
                 display: AbstractButton.TextOnly
+                onClicked: {
+                    let result = parse.search(txtKeyword.text)
+                    txtResult.text = result
+                }
+            }
+
+            Button {
+                id: btnCloseSearch
+                objectName: "btnCloseSearch"
+                x: 376
+                y: 40
+                width: 60
+                height: 28
+                text: qsTr("关闭")
+                display: AbstractButton.TextOnly
+                onClicked: {
+                    searchPrompt.visible = false
+                }
             }
 
             Text {
@@ -595,6 +613,8 @@ Window {
                 text: ""
                 x: 10
                 y: 40
+                width: 350
+                wrapMode: Text.WordWrap
             }
 
         }

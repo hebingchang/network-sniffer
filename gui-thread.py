@@ -125,6 +125,15 @@ class parseController(QObject):
         else:
             return '数据包不是 TCP 分段的最后一段。'
 
+    @pyqtSlot(str, result=str)
+    def search(self, keyword):
+        result = []
+        for bid in network_sniffer.getTcpBodies():
+            if keyword.encode('utf-8') in network_sniffer.getTcpBodies()[bid]['data']:
+                result.append('#%s' % bid)
+
+        return '找到%s个数据包. '% len(result) + ', '.join(result)
+
 
 class snifferGui:
     def __init__(self, argv):
