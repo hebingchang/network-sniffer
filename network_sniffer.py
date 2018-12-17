@@ -170,8 +170,65 @@ class tcpOptions:
     def __init__(self, buf):
         self.options = []
         offset = 0
-        while buf[offset:offset+8].uint != 0:
-            option = {'kind': buf[offset:offset+8].uint}
+        while offset < len(buf):
+            item = consts.tcp_options[buf[offset:offset+8].uint]
+            if item['length'] > 1:
+                length = buf[offset+8:offset+16].uint       # bytes
+                if length == 2:
+                    self.options.append([{
+                        'label': item['meaning'],
+                        'value': buf[offset:offset+8].uint
+                    }, {
+                        'label': 'length',
+                        'value': 2
+                    }])
+                    offset += 16
+                else:
+                    option = [
+                        {
+                            'label': item['meaning'],
+                            'value': buf[offset:offset+8].uint
+                        },
+                        {
+                            'label': 'length',
+                            'value': length
+                        }
+                    ]
+                    offset += 16
+                    if item['params']:
+                        len_sum = 0
+                        while len_sum != (length - 2) * 8:
+                            for p in item['params']:
+                                if 'variable' in p:
+                                    option.append({
+                                        'label': p['name'],
+                                        'value': '0x%s' % buf[offset+len_sum:offset+(length-2)*8].hex
+                                    })
+                                    len_sum = (length - 2) * 8
+                                else:
+                                    option.append({
+                                        'label': p['name'],
+                                        'value': '0x%s(%s)' % (buf[offset+len_sum:offset+len_sum+p['length']].hex, buf[offset+len_sum:offset+len_sum+p['length']].uint)
+                                    })
+                                    len_sum += p['length']
+                        self.options.append(option)
+                        offset += len_sum
+                    else:
+                        option.append({
+                            'label': 'value',
+                            'value': '0x%s' % buf[offset:offset+(length-2)*8].hex
+                        })
+                        self.options.append(option)
+                        offset += (length - 2) * 8
+            else:
+                self.options.append([{
+                    'label': item['meaning'],
+                    'value': buf[offset:offset+8].uint
+                }, {
+                    'label': 'length',
+                    'value': 1
+                }])
+                offset += 8
 
 class tcpHeader:
     def __init__(self, buf):
@@ -186,7 +243,6 @@ class tcpHeader:
         self.window_size = bits[112:128].uint
         self.checksum = bits[128:144].hex
         self.urgent_pointer = bits[144:160].uint
-        # self.options = tcpOptions(bits[160:self.header_length*8])
 
 class tcpBody:
     def __init__(self, buf):
@@ -206,17 +262,17 @@ class udpHeader:
 class igmpHeader:
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.type = bits[0: 8].hex
+        self.type = bits[0:8].hex
         self.type_name = consts.igmp_types[bits[0:8].uint]
-        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint * 0.1, bits[8: 16].hex
-        self.checksum = bits[16: 32].hex
+        self.maxRespTime, self.maxRespTimeHex = bits[8:16].uint * 0.1, bits[8:16].hex
+        self.checksum = bits[16:32].hex
         self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
 
 class igmpv3Header:
     def __init__(self, buf):
         bits = BitArray(buf)
-        self.type = bits[0: 8].hex
-        self.checksum = bits[16: 32].hex
+        self.type = bits[0:8].hex
+        self.checksum = bits[16:32].hex
 
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
@@ -510,7 +566,8 @@ class Packet:
             else:
                 if self.ipHeader.protocol == 'TCP':
                     self.ipBody.tcpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum
-                    data.append({
+                    self.ipBody.tcpHeader.options = tcpOptions(BitArray(self.ipBodyRaw)[160: self.ipBody.tcpHeader.header_length * 8]).options
+                    tcp_header = {
                         'label': 'TCP 头部 / Transmission Control Protocol Header',
                         'value': '',
                         'bold': True,
@@ -602,7 +659,24 @@ class Packet:
                                 'value': '0x%s (%s)' % (self.ipBody.tcpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.tcpHeader.verifyChecksum])
                             }
                         ]
-                    })
+                    }
+                    options = []
+                    if self.ipBody.tcpHeader.options:
+                        for idx in range(len(self.ipBody.tcpHeader.options)):
+                            option = {
+                                    'label': self.ipBody.tcpHeader.options[idx][0]['label'],
+                                    'value': '(%s)' % self.ipBody.tcpHeader.options[idx][0]['value'],
+                                    'children': self.ipBody.tcpHeader.options[idx][1:]
+                            }
+                            options.append(option)
+                    if options:
+                        tcp_header['children'].append({
+                            'label': '选项',
+                            'value': '',
+                            'children': options
+                        })
+
+                    data.append(tcp_header)
 
 
                     if self.id in packet_id_struct:
