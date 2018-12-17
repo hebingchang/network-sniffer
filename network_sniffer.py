@@ -8,6 +8,8 @@ try:
     from http_parser.parser import HttpParser
 except ImportError:
     from http_parser.pyparser import HttpParser
+from tcp_packet import tcpPacket, tcp_bodies, packet_id_struct
+from kaitaistruct import KaitaiStream, BytesIO
 
 class Sniffer:
     def __init__(self, sniffer):
@@ -126,10 +128,11 @@ class icmpHeader:
         self.checksum = bits[16:32].hex
 
 class ipBody:
-    def __init__(self, buf, protocol, ip_bits):
+    def __init__(self, buf, protocol, ip_bits, id):
         if protocol == 'TCP':
             self.tcpHeader = tcpHeader(buf)
-            self.tcpBody = tcpBody(buf[self.tcpHeader.header_length:])
+            # self.tcpBody = tcpBody(buf[self.tcpHeader.header_length:])
+            self.tcpBody = tcpPacket(id, buf, self.tcpHeader)
             self.parameters = buf, ip_bits
         elif protocol == 'UDP':
             self.udpHeader = udpHeader(buf)
@@ -145,7 +148,8 @@ class ipBody:
                 self.igmpHeader = igmpHeader(buf)
                 self.parameters = buf
             else:
-                print('IGMPv3: %s' % len(buf))
+                self.igmpv3Header = igmpv3Header(buf)
+                self.parameters = buf
 
 class tcpFlag:
     def __init__(self, buf):
@@ -202,9 +206,15 @@ class igmpHeader:
         bits = BitArray(buf)
         self.type = bits[0: 8].hex
         self.type_name = consts.igmp_types[bits[0:8].uint]
-        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint, bits[8: 16].hex
+        self.maxRespTime, self.maxRespTimeHex = bits[8: 16].uint * 0.1, bits[8: 16].hex
         self.checksum = bits[16: 32].hex
         self.groupAddress = str(ipaddress.IPv4Address(bits[32:64].bytes))
+
+class igmpv3Header:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.type = bits[0: 8].hex
+        self.checksum = bits[16: 32].hex
 
 class verifyChecksum:
     def doChecksum(self, bits, pseudobits, protocol):
@@ -259,7 +269,7 @@ class Packet:
             elif self.ipVersion == 6:
                 self.ipHeader = ipv6Header(self.__ipData)
 
-            print('ipHeader parse complete.')
+            # print('ipHeader parse complete.')
 
             self.source, self.destination, self.protocol = self.ipHeader.source_ip, self.ipHeader.dest_ip, self.ipHeader.protocol
             self.ipBodyRaw = self.__ipData[self.ipHeader.header_length: self.ipHeader.total_length]
@@ -267,12 +277,12 @@ class Packet:
             if self.ethHeader.type_code == '0800':
                 if not self.ipHeader.flags.more_fragment:
                     if self.ipHeader.identification_int != 0 and self.ipHeader.identification_int in self.ip_ids:
-                        print('More fragment.')
+                        # print('More fragment.')
                         for id in self.ip_ids[self.ipHeader.identification_int]:
                             self.ipBodyRaw += self.ip_packets[id].ipBodyRaw
 
-            self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol, self.ipHeader.ip_bits)
-            print('ipBody parse complete.')
+            self.ipBody = ipBody(self.ipBodyRaw, self.ipHeader.protocol, self.ipHeader.ip_bits, self.id)
+            # print('ipBody parse complete.')
 
         elif self.ethHeader.type_code == '0806':                    # ARP
             self.source, self.destination = self.ethHeader.sourceMac, self.ethHeader.destMac
@@ -481,7 +491,7 @@ class Packet:
                 data.append(ipv6_header)
 
             if self.ipHeader.version == 4 and self.ipHeader.flags.more_fragment == True:
-                print('Waiting for more fragments.')
+                # print('Waiting for more fragments.')
                 ids = self.ip_ids[self.ipHeader.identification_int]
                 slicing = {
                     'label': 'IP 分片',
@@ -592,6 +602,13 @@ class Packet:
                         ]
                     })
 
+                    if self.id in packet_id_struct:
+                        print(packet_id_struct[self.id])
+
+                    if self.id in tcp_bodies:
+                        print(tcp_bodies[self.id]['data'].decode('utf-8', 'ignore'))
+
+                    '''
                     if self.ipBody.tcpBody.has_body:
                         try:
                             p = HttpParser()
@@ -614,6 +631,7 @@ class Packet:
                                 }
                             ]
                         })
+                    '''
 
                 elif self.ipHeader.protocol == 'UDP':
                     self.ipBody.udpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters[0], self.ipBody.parameters[1], self.ipHeader.protocol).verifyChecksum
@@ -666,31 +684,49 @@ class Packet:
                         ]
                     })
 
-                elif 'IGMP' in self.ipHeader.protocol and self.ipHeader.payload_length == 8:
-                    self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
-                    data.append({
-                        'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
-                        'value': '',
-                        'bold': True,
-                        'children': [
-                            {
-                                'label': '类型',
-                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.type, self.ipBody.igmpHeader.type_name)
-                            },
-                            {
-                                'label': '最大响应时延',
-                                'value': '%s 秒（0x%s）' % (self.ipBody.igmpHeader.maxRespTime, self.ipBody.igmpHeader.maxRespTimeHex)
-                            },
-                            {
-                                'label': '校验和',
-                                'value': '0x%s（%s）' % (self.ipBody.igmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpHeader.verifyChecksum])
-                            },
-                            {
-                                'label': '组地址',
-                                'value': self.ipBody.igmpHeader.groupAddress
-                            }
-                        ]
-                    })
+                elif 'IGMP' in self.ipHeader.protocol:
+                    if self.ipHeader.payload_length == 8:
+                        self.ipBody.igmpHeader.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
+                        data.append({
+                            'label': 'IGMP 头部 / Internet Group Management Protocol Headers',
+                            'value': '',
+                            'bold': True,
+                            'children': [
+                                {
+                                    'label': '类型',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpHeader.type, self.ipBody.igmpHeader.type_name)
+                                },
+                                {
+                                    'label': '最大响应时延',
+                                    'value': '%s 秒(0x%s)' % (self.ipBody.igmpHeader.maxRespTime, self.ipBody.igmpHeader.maxRespTimeHex)
+                                },
+                                {
+                                    'label': '校验和',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpHeader.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpHeader.verifyChecksum])
+                                },
+                                {
+                                    'label': '组地址',
+                                    'value': self.ipBody.igmpHeader.groupAddress
+                                }
+                            ]
+                        })
+                    else:
+                        self.ipBody.igmpv3Header.verifyChecksum = verifyChecksum(self.ipBody.parameters, [], '').verifyChecksum
+                        data.append({
+                            'label': 'IGMPv3 头部 / Internet Group Management Protocol Version 3 Headers',
+                            'value': '',
+                            'bold': True,
+                            'children': [
+                                {
+                                    'label': '类型',
+                                    'value': '0x%s' % self.ipBody.igmpv3Header.type
+                                },
+                                {
+                                    'label': '校验和',
+                                    'value': '0x%s(%s)' % (self.ipBody.igmpv3Header.checksum, '校验' + {True: '通过', False: '失败'}[self.ipBody.igmpv3Header.verifyChecksum])
+                                }
+                            ]
+                        })
 
         return data
 
