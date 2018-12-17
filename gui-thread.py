@@ -49,7 +49,7 @@ class SnifferThread(QThread):
                         'protocol': packet.protocol,
                         'length': packet.length
                     }
-                    print(data)
+                    # print(data)
                     self.signal.emit((data, packet))
 
                 if listening == False:
