@@ -11,4 +11,5 @@ anytree==2.4.3
 Quamash==0.6.1
 PyQt5==5.11.3
 http-parser==0.8.3
+dpkt==1.9.1
 -e git://github.com/hebingchang/pypcap#egg=pypcap

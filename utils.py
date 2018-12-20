@@ -1,5 +1,3 @@
-import dpkt
-import datetime
 import socket
 from dpkt.compat import compat_ord
 
