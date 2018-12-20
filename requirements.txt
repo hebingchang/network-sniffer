@@ -1,10 +1,14 @@
-bitstring==3.1.5
-dpkt==1.9.1
--e git://github.com/hebingchang/pypcap#egg=pypcap
-PyQt5==5.11.3
-netaddr==0.7.19
-requests==2.20.1
 netifaces==0.10.7
 psutil==5.4.8
+setuptools==40.5.0
+netaddr==0.7.19
+bitstring==3.1.5
+requests==2.20.1
+dnslib==0.9.7
+Cython==0.29
 prettytable==0.7.2
 anytree==2.4.3
+Quamash==0.6.1
+PyQt5==5.11.3
+http-parser==0.8.3
+-e git://github.com/hebingchang/pypcap#egg=pypcap
