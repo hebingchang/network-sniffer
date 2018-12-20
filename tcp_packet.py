@@ -25,7 +25,6 @@ class tcpPacket:
                 packet_id_map[expected_next_seq] = packet_id
 
             else:
-                print('INSERT id %s TO LIST.' % packet_id)
                 packet_id_struct[packet_id] = [packet_id]
                 expected_next_seq = header.sequence_number + len(self.body_buf)
                 packet_id_map[expected_next_seq] = packet_id

@@ -209,5 +209,3 @@ def startGui():
     gui = snifferGui(sys.argv)
 
 startGui()
-
-

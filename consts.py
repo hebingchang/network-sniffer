@@ -44,6 +44,17 @@ def updateConsts():
     f.write(r.content)
     f.close()
 
+    r = requests.get('https://www.iana.org/assignments/dns-parameters/dns-parameters-4.csv')  # DNS 类型
+    f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/dns-parameters-4.csv', 'wb')
+    f.write(r.content)
+    f.close()
+
+    r = requests.get(
+        'https://www.iana.org/assignments/dns-parameters/dns-parameters-2.csv')  # DNS Classes
+    f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/dns-parameters-2.csv', 'wb')
+    f.write(r.content)
+    f.close()
+
 eth_types = dict()
 with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/ieee-802-numbers.csv', 'r') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',')
@@ -257,3 +268,27 @@ with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/igmp-typ
         else:
             for idx in range(int(key[0], 16), int(key[1], 16) + 1):
                 igmp_types[idx] = row[1]
+
+dns_types = dict()
+with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/dns-parameters-2.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',')
+    next(csvreader)
+    for row in csvreader:
+        key = row[0].split('-')
+        if len(key) == 1:
+            dns_types[int(row[0])] = row[2]
+        else:
+            for idx in range(int(key[0]), int(key[1]) + 1):
+                dns_types[idx] = row[2]
+
+dns_classes = dict()
+with open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/dns-parameters-4.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',')
+    next(csvreader)
+    for row in csvreader:
+        key = row[1].split('-')
+        if len(key) == 1:
+            dns_classes[int(row[1])] = row[0]
+        else:
+            for idx in range(int(key[0]), int(key[1]) + 1):
+                dns_classes[idx] = row[0]

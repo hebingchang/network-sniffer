@@ -1,4 +1,7 @@
+import binascii
+
 import dpkt, utils
+from dnslib import DNSRecord, DNSQuestion, QTYPE
 from dpkt.compat import compat_ord
 import consts, pcap
 from bitstring import BitArray
@@ -129,6 +132,21 @@ class icmpHeader:
         self.code = bits[8:16].uint
         self.checksum = bits[16:32].hex
 
+class dnsBody:
+    def __init__(self, buf):
+        bits = BitArray(buf)
+        self.transaction_id = bits[0:16].hex
+        self.flags = bits[16:32].hex
+        self.questions = bits[32:48].uint
+        self.answer_rrs = bits[48:64].uint
+        self.authority_rrs = bits[64:80].uint
+        self.additional_rrs = bits[80:96].uint
+
+        d = DNSRecord.parse(buf)
+        self.queries = d.questions
+        self.answers = d.rr
+
+
 class ipBody:
     def __init__(self, buf, protocol, ip_bits, id):
         if protocol == 'TCP':
@@ -138,6 +156,8 @@ class ipBody:
             self.parameters = buf, ip_bits
         elif protocol == 'UDP':
             self.udpHeader = udpHeader(buf)
+            if self.udpHeader.source_port == 53 or self.udpHeader.destination_port == 53:           # DNS
+                self.dnsBody = dnsBody(buf[8:])
             self.parameters = buf, ip_bits
         elif 'ICMP' in protocol:
             self.icmpHeader = icmpHeader(buf)
@@ -832,6 +852,107 @@ class Packet:
                             }
                         ]
                     })
+
+                    if self.ipBody.udpHeader.source_port == 53 or self.ipBody.udpHeader.destination_port == 53:            # DNS
+                        children = [
+                                {
+                                    'label': '会话标识',
+                                    'value': self.ipBody.dnsBody.transaction_id
+                                },
+                                {
+                                    'label': '标志',
+                                    'value': '0x' + self.ipBody.dnsBody.transaction_id
+                                },
+                                {
+                                    'label': '问题数',
+                                    'value': self.ipBody.dnsBody.questions
+                                },
+                                {
+                                    'label': '回答资源记录数',
+                                    'value': self.ipBody.dnsBody.answer_rrs
+                                },
+                                {
+                                    'label': '授权资源记录数',
+                                    'value': self.ipBody.dnsBody.authority_rrs
+                                },
+                                {
+                                    'label': '附加资源记录数',
+                                    'value': self.ipBody.dnsBody.additional_rrs
+                                }
+                            ]
+
+                        if len(self.ipBody.dnsBody.queries) > 0:
+                            queries = []
+                            for query in self.ipBody.dnsBody.queries:
+                                queries.append({
+                                    'label': str(query.qname),
+                                    'value': '',
+                                    'bold': True,
+                                    'children': [
+                                        {
+                                            'label': '域名',
+                                            'value': str(query.qname)
+                                        },
+                                        {
+                                            'label': 'Type',
+                                            'value': '%s (%s)' % (consts.dns_types[query.qtype], query.qtype)
+                                        },
+                                        {
+                                            'label': 'Class',
+                                            'value': '%s (%s)' % (consts.dns_classes[query.qclass], query.qclass)
+                                        }
+                                    ]
+                                })
+                            children.append({
+                                'label': '查询问题',
+                                'value': '',
+                                'bold': True,
+                                'children': queries
+                            })
+
+                        if len(self.ipBody.dnsBody.answers) > 0:
+                            answers = []
+                            for answer in self.ipBody.dnsBody.answers:
+                                answers.append({
+                                    'label': str(answer.rname),
+                                    'value': '',
+                                    'bold': True,
+                                    'children': [
+                                        {
+                                            'label': '域名',
+                                            'value': str(answer.rname)
+                                        },
+                                        {
+                                            'label': 'Type',
+                                            'value': '%s (%s)' % (consts.dns_types[answer.rtype], answer.rtype)
+                                        },
+                                        {
+                                            'label': 'Class',
+                                            'value': '%s (%s)' % (consts.dns_classes[answer.rclass], answer.rclass)
+                                        },
+                                        {
+                                            'label': '生存时间 (ttl)',
+                                            'value': str(answer.ttl)
+                                        },
+                                        {
+                                            'label': '数据',
+                                            'value': str(answer.rdata)
+                                        }
+                                    ]
+                                })
+                            children.append({
+                                'label': '回答',
+                                'value': '',
+                                'bold': True,
+                                'children': answers
+                            })
+
+                        data.append({
+                            'label': 'DNS / Domain Name System',
+                            'value': '',
+                            'bold': True,
+                            'children': children
+                        })
 
                 elif 'ICMP' in self.ipHeader.protocol:
                     if 'IPv6' in self.ipHeader.protocol:
