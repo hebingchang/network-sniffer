@@ -216,6 +216,7 @@ Window {
             ScrollBar.vertical: ScrollBar {}
             headerPositioning: ListView.OverlayHeader
             highlightMoveDuration : 1000
+            highlightResizeDuration: 800
             clip: true
             highlight: Rectangle { color: "lightsteelblue"; radius: 0 }
             header: Item {
