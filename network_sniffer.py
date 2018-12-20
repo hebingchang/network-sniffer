@@ -1,9 +1,7 @@
-import binascii
-
-import dpkt, utils
-from dnslib import DNSRecord, DNSQuestion, QTYPE
+import utils
+from dnslib import DNSRecord
 from dpkt.compat import compat_ord
-import consts, pcap
+import consts
 from bitstring import BitArray
 import ipaddress
 from netaddr import *
@@ -11,7 +9,12 @@ try:
     from http_parser.parser import HttpParser
 except ImportError:
     from http_parser.pyparser import HttpParser
-from tcp_packet import tcpPacket, tcp_bodies, packet_id_struct
+from tcp_packet import *
+
+def init_tcp():
+    tcp_bodies.clear()
+    packet_id_map.clear()
+    packet_id_struct.clear()
 
 def getTcpBodies():
     return tcp_bodies
@@ -698,7 +701,8 @@ class Packet:
 
                     data.append(tcp_header)
 
-
+                    print(self.id)
+                    print(tcp_bodies)
                     if self.id in packet_id_struct:
                         tmp = []
                         http_payload = None

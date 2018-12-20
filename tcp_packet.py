@@ -1,7 +1,12 @@
 tcp_bodies = dict()
 packet_id_map = dict()          # expected_seq -> id
-
 packet_id_struct = dict()       # Access all segment by one packet id
+
+def tcpClear():
+    global tcp_bodies, packet_id_map, packet_id_struct
+    tcp_bodies = dict()
+    packet_id_map = dict()
+    packet_id_struct = dict()
 
 class tcpPacket:
     def __init__(self, packet_id, buf, header):

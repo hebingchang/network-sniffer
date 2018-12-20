@@ -40,6 +40,10 @@ Window {
         packetList.currentIndex = index
     }
 
+    function clearList() {
+        packetModel.clear()
+    }
+
     function savePacketDialog (type) {
         if (type === 0) {                                    // 另存为数据包
             if (packetList.currentIndex == -1) {

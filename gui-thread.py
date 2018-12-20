@@ -67,6 +67,7 @@ class parseController(QObject):
 
     @pyqtSlot(int, result=str)
     def onItemChange(self, index):
+        print(index, len(packets))
         data = packets[index].parse()
         return json.dumps(data)
 
@@ -179,7 +180,7 @@ class snifferGui:
         # sys.exit(app.exec_())
 
     def myFunction(self):
-        global listening, filter
+        global listening, filter, packets
         if (self.sniffer_status):
             self.sniffer_status = False
             self.root.stopSnifferAction()
@@ -188,7 +189,9 @@ class snifferGui:
         else:
             self.sniffer_status = True
             listening = True
+            self.root.clearList()
             packets = list()
+            network_sniffer.init_tcp()
             self.root.startSnifferAction()
             self.sniffer_thread.dev = self.dev
             self.sniffer_thread.start()  # Finally starts the thread
