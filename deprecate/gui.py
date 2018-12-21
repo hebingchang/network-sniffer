@@ -1,13 +1,9 @@
-import time
-
 from PyQt5.QtGui import QGuiApplication
-from PyQt5.QtQml import QQmlApplicationEngine, QQmlProperty
-from PyQt5.QtCore import QUrl, QObject, pyqtSlot, QRunnable, QThreadPool, QAbstractListModel, QThread, pyqtSignal
+from PyQt5.QtQml import QQmlApplicationEngine
+from PyQt5.QtCore import QObject
 
 import pcap, sys
-import network_sniffer
-import _thread
-import asyncio, quamash
+from core import network_sniffer
 from threading import Thread
 import queue
 

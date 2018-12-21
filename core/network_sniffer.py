@@ -1,7 +1,6 @@
-import utils
+from core import utils, consts
 from dnslib import DNSRecord
 from dpkt.compat import compat_ord
-import consts
 from bitstring import BitArray
 import ipaddress
 from netaddr import *
@@ -9,7 +8,7 @@ try:
     from http_parser.parser import HttpParser
 except ImportError:
     from http_parser.pyparser import HttpParser
-from tcp_packet import *
+from core.tcp_packet import *
 
 def init_tcp():
     tcp_bodies.clear()
@@ -118,7 +117,7 @@ class ipv6Header:
         next_header = self.next_header_code
         offset = 320
         while next_header in [0, 60, 43, 44, 51, 50, 60, 135, 59]:
-            self.protocol = consts.protocol_types[str(bits[offset:offset+8].uint)]
+            self.protocol = consts.protocol_types[str(bits[offset:offset + 8].uint)]
             self.options.append({
                 'code': next_header,
                 'next_header': bits[offset:offset+8].uint,
@@ -194,7 +193,7 @@ class tcpOptions:
         self.options = []
         offset = 0
         while offset < len(buf):
-            item = consts.tcp_options[buf[offset:offset+8].uint]
+            item = consts.tcp_options[buf[offset:offset + 8].uint]
             if item['length'] > 1:
                 length = buf[offset+8:offset+16].uint       # bytes
                 if length == 2:
@@ -564,7 +563,8 @@ class Packet:
                             'value': '0x' + option['value'],
                             'children': [{
                                 'label': '下一头部类型',
-                                'value': '%s (%s)' % (consts.protocol_types[str(option['next_header'])], option['next_header'])
+                                'value': '%s (%s)' % (
+                                consts.protocol_types[str(option['next_header'])], option['next_header'])
                             }]
                         }
                     )

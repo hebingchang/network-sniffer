@@ -3,7 +3,7 @@ from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
 
 import pcap, sys, queue, json, os, netifaces, psutil
-import network_sniffer
+from core import network_sniffer
 from anytree.importer import JsonImporter
 from anytree import RenderTree
 from prettytable import PrettyTable
