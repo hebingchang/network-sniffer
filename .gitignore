@@ -2,3 +2,4 @@
 __pycache__/
 src/
 qt-gui/*.qmlc
+.DS_Store
