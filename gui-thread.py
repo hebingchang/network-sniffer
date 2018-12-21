@@ -14,7 +14,6 @@ except ImportError:
 
 importer = JsonImporter()
 
-#somewhere accessible to both:
 callback_queue = queue.Queue()
 listening = False
 filter = ''
@@ -138,7 +137,9 @@ class parseController(QObject):
 
 class snifferGui:
     def __init__(self, argv):
-        app = QGuiApplication(argv)
+        self.app = QGuiApplication(argv)
+
+    def load(self):
         engine = QQmlApplicationEngine()
         context = engine.rootContext()
         context.setContextProperty('mainWindow', engine)  # the string can be anything
@@ -158,8 +159,6 @@ class snifferGui:
         self.dev = self.devs[0]
         self.sniffer_status = False
 
-        # self.root.appendPacketModel({'source': '10.162.31.142', 'destination': '151.101.74.49', 'length': 52, 'id': 1})
-
         self.packetModel = self.root.findChild(QObject, "packetModel")
 
         self.sniffer_thread = SnifferThread()  # This is the thread object
@@ -172,12 +171,9 @@ class snifferGui:
         self.comboDev = self.root.findChild(QObject, "comboDevice")
         self.comboDev.activated.connect(self.getDev)
 
-        packets = list()
+        engine.quit.connect(self.app.quit)
 
-        engine.quit.connect(app.quit)
-        sys.exit(app.exec_())
-
-        # sys.exit(app.exec_())
+        return self.app.exec_()
 
     def myFunction(self):
         global listening, filter, packets
@@ -210,5 +206,7 @@ class snifferGui:
 
 def startGui():
     gui = snifferGui(sys.argv)
+    ret_code = gui.load()
+    sys.exit(ret_code)
 
 startGui()
