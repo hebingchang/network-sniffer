@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtQml import QQmlApplicationEngine
-from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal, Qt
 
 import pcap, sys, queue, json, os, netifaces, psutil
 from core import network_sniffer
@@ -139,6 +139,7 @@ class snifferGui:
     def __init__(self, argv):
         self.app = QGuiApplication(argv)
         self.app.setWindowIcon(QIcon('qt-gui/images/icon.png'))
+        self.app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
     def load(self):
         engine = QQmlApplicationEngine()
