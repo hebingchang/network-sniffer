@@ -634,12 +634,13 @@ Window {
 
     TextField {
         id: txtFilter
-        x: 93
         y: 42
-        width: 585
         height: 28
         text: qsTr("")
-        opacity: 0.8
+        anchors.right: parent.right
+        anchors.rightMargin: 122
+        anchors.left: parent.left
+        anchors.leftMargin: 93
         onTextChanged: {
             parse.setFilter(txtFilter.text)
         }
