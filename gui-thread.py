@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, pyqtSlot, QThread, pyqtSignal
 
@@ -138,6 +138,7 @@ class parseController(QObject):
 class snifferGui:
     def __init__(self, argv):
         self.app = QGuiApplication(argv)
+        self.app.setWindowIcon(QIcon('qt-gui/images/icon.png'))
 
     def load(self):
         engine = QQmlApplicationEngine()
