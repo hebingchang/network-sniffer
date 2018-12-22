@@ -541,7 +541,7 @@ Window {
             }
             Button {
                 id: btnDoSearch
-                objectName: "btnStart"
+                objectName: "btnDoSearch"
                 x: 376
                 y: 6
                 width: 60
@@ -624,6 +624,7 @@ Window {
 
     RowLayout {
         id: rowLayout1
+        objectName: "rowLayout1"
         height: 28
         anchors.top: parent.top
         anchors.topMargin: 39

@@ -178,7 +178,7 @@ class snifferGui:
         # Connect the signal from the thread to the finished method
         self.sniffer_thread.signal.connect(self.addItem)
 
-        self.btnStart = self.root.findChild(QObject, "btnStart")
+        self.btnStart = self.root.findChild(QObject, "rowLayout1").findChild(QObject, "btnStart")
         self.btnStart.clicked.connect(self.toggleSniffer)
 
         self.comboDev = self.root.findChild(QObject, "comboDevice")
