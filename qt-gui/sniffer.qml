@@ -2,19 +2,23 @@ import QtQuick 2.6
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.3
 import QtQuick.Dialogs 1.3
+import QtQuick.Layouts 1.3
 
 Window {
     property bool menuOpen: false
 
+    // 刷新设备列表
     function setDevModel(dev) {
         comboDevice.model = dev
     }
 
+    // 添加数据包
     function appendPacketModel(packet) {
         packetModel.append(packet)
         groupPacket.title = '数据包 (' + packetModel.rowCount() + ')'
     }
 
+    // 开始抓包
     function startSnifferAction() {
         btnStart.text = '停止抓包'
         mainWindow.title = 'Sniffer - 正在抓包'
@@ -22,6 +26,7 @@ Window {
         btnRefresh.visible = false
     }
 
+    // 停止抓包
     function stopSnifferAction() {
         btnStart.text = '开始抓包'
         mainWindow.title = 'Sniffer'
@@ -29,20 +34,21 @@ Window {
         btnRefresh.visible = true
     }
 
+    // 包列表元素选中事件
     function changeItem (index) {
         var data = JSON.parse(parse.onItemChange(index))
-
         parseAccordion.model = data
-
         packetList.currentIndex = index
     }
 
+    // 清空包列表
     function clearList() {
         packetModel.clear()
     }
 
+    // 弹出保存文件对话框
     function savePacketDialog (type) {
-        if (type === 0) {                                    // 另存为数据包
+        if (type === 0) {                                           // 另存为数据包
             if (packetList.currentIndex == -1) {
                 msgbox('错误', '未选择数据包。')
             } else {
@@ -61,12 +67,14 @@ Window {
         }
     }
 
+    // 弹出提示框
     function msgbox (title, message) {
         messageDialog.title = title
         messageDialog.text = message
         messageDialog.visible = true
     }
 
+    // 右下角浮动菜单事件
     function toggleMenu () {
         btnSavePacket.visible = true
         btnRebuildTCP.visible = true
@@ -104,56 +112,6 @@ Window {
     height: 550
     title: qsTr("Sniffer")
 
-    Text {
-        id: lblDevice
-        x: 20
-        y: 10
-        text: qsTr("选择网卡:")
-    }
-
-    Button {
-        id: btnStart
-        objectName: "btnStart"
-        x: 696
-        y: 42
-        width: 96
-        height: 27
-        text: qsTr("开始抓包")
-        anchors.right: parent.right
-        anchors.rightMargin: 8
-        focusPolicy: Qt.TabFocus
-        display: AbstractButton.TextOnly
-    }
-
-    ComboBox {
-        id: comboDevice
-        objectName: "comboDevice"
-        y: 5
-        height: 28
-        anchors.left: parent.left
-        anchors.leftMargin: 93
-        anchors.right: parent.right
-        anchors.rightMargin: 122
-        model: ListModel {
-            id: devices
-        }
-    }
-
-    Button {
-        id: btnRefresh
-        x: 496
-        y: 5
-        width: 96
-        height: 27
-        text: qsTr("刷新网卡")
-        anchors.right: parent.right
-        anchors.rightMargin: 8
-        focusPolicy: Qt.TabFocus
-        display: AbstractButton.TextOnly
-        onClicked: {
-            devices.clear()
-        }
-    }
 
     Label {
         id: lblSniffering
@@ -366,10 +324,10 @@ Window {
             anchors.verticalCenter: parent.verticalCenter
             source: 'images/plus.svg'
             Behavior on rotation { PropertyAnimation {
-                properties: "rotation";
-                easing.type: Easing.InOutQuad
-                duration: 1000
-            } }
+                    properties: "rotation";
+                    easing.type: Easing.InOutQuad
+                    duration: 1000
+                } }
         }
 
         onClicked: toggleMenu()
@@ -422,16 +380,16 @@ Window {
         }
 
         Behavior on opacity { PropertyAnimation {
-            id: ease1
-            properties: "opacity"
-            easing.type: Easing.InOutQuad
-            duration: 600
-            onRunningChanged: {
-                if (btnSavePacket.opacity == 0 && (!running)) {
-                    btnSavePacket.visible = false
+                id: ease1
+                properties: "opacity"
+                easing.type: Easing.InOutQuad
+                duration: 600
+                onRunningChanged: {
+                    if (btnSavePacket.opacity == 0 && (!running)) {
+                        btnSavePacket.visible = false
+                    }
                 }
-            }
-        } }
+            } }
 
         topPadding: 0
         anchors.rightMargin: 17
@@ -465,16 +423,16 @@ Window {
             anchors.verticalCenter: parent.verticalCenter
         }
         Behavior on opacity { PropertyAnimation {
-            id: ease3
-            properties: "opacity"
-            easing.type: Easing.InOutQuad
-            duration: 1200
-            onRunningChanged: {
-                if (btnSearch.opacity == 0 && (!running)) {
-                    btnSearch.visible = false
+                id: ease3
+                properties: "opacity"
+                easing.type: Easing.InOutQuad
+                duration: 1200
+                onRunningChanged: {
+                    if (btnSearch.opacity == 0 && (!running)) {
+                        btnSearch.visible = false
+                    }
                 }
-            }
-        } }
+            } }
         topPadding: 0
         anchors.rightMargin: 17
         rightPadding: 0
@@ -510,16 +468,16 @@ Window {
             anchors.verticalCenter: parent.verticalCenter
         }
         Behavior on opacity { PropertyAnimation {
-            id: ease2
-            properties: "opacity"
-            easing.type: Easing.InOutQuad
-            duration: 900
-            onRunningChanged: {
-                if (btnRebuildTCP.opacity == 0 && (!running)) {
-                    btnRebuildTCP.visible = false
+                id: ease2
+                properties: "opacity"
+                easing.type: Easing.InOutQuad
+                duration: 900
+                onRunningChanged: {
+                    if (btnRebuildTCP.opacity == 0 && (!running)) {
+                        btnRebuildTCP.visible = false
+                    }
                 }
-            }
-        } }
+            } }
         topPadding: 0
         anchors.rightMargin: 17
         rightPadding: 0
@@ -622,29 +580,94 @@ Window {
         }
     }
 
-    Text {
-        id: lblDevice1
-        x: 20
-        y: 46
-        text: qsTr("过滤器:")
+    RowLayout {
+        id: rowLayout
+        height: 28
+        anchors.top: parent.top
+        anchors.topMargin: 5
+        anchors.left: parent.left
+        anchors.leftMargin: 19
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        spacing: 15
+
+        Text {
+            id: lblDevice
+            text: qsTr("选择网卡:")
+        }
+
+        ComboBox {
+            id: comboDevice
+            objectName: "comboDevice"
+            height: 28
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            model: ListModel {
+                id: devices
+            }
+        }
+
+        Button {
+            id: btnRefresh
+            width: 96
+            height: 28
+            text: qsTr("刷新网卡")
+            Layout.fillHeight: true
+            focusPolicy: Qt.TabFocus
+            display: AbstractButton.TextOnly
+            onClicked: {
+                devices.clear()
+            }
+        }
+
     }
 
-    TextField {
-        id: txtFilter
-        y: 42
+    RowLayout {
+        id: rowLayout1
         height: 28
-        text: qsTr("")
-        anchors.right: parent.right
-        anchors.rightMargin: 122
+        anchors.top: parent.top
+        anchors.topMargin: 39
         anchors.left: parent.left
-        anchors.leftMargin: 93
-        onTextChanged: {
-            parse.setFilter(txtFilter.text)
+        anchors.leftMargin: 19
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        spacing: 15
+
+        Text {
+            id: lblDevice1
+            width: 56
+            text: qsTr("包过滤器:")
+            Layout.fillWidth: false
         }
+
+        TextField {
+            id: txtFilter
+            height: 28
+            text: qsTr("")
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            onTextChanged: {
+                parse.setFilter(txtFilter.text)
+            }
+        }
+
+        Button {
+            id: btnStart
+            objectName: "btnStart"
+            width: 96
+            height: 28
+            text: qsTr("开始抓包")
+            Layout.fillHeight: true
+            focusPolicy: Qt.TabFocus
+            display: AbstractButton.TextOnly
+        }
+
+
     }
 }
 
 /*##^## Designer {
-    D{i:3;anchors_width:259;anchors_x:73}D{i:6;anchors_height:172;anchors_width:771;anchors_x:7;anchors_y:32}
+    D{i:6;anchors_height:172;anchors_width:771;anchors_x:7;anchors_y:32}D{i:49;anchors_height:28;anchors_width:771;anchors_x:19;anchors_y:5}
+D{i:53;anchors_width:780;anchors_x:10;anchors_y:39}
 }
  ##^##*/

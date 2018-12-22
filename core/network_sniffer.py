@@ -1034,11 +1034,3 @@ class Packet:
         for dig in self.pkt:
             hex_string += '{:02x} '.format(dig)
         return hex_string
-
-'''
-sniffer = pcap.pcap(name=None, promisc=True, immediate=True, timeout_ms=50)
-addr = lambda pkt, offset: '.'.join(str(pkt[i]) for i in range(offset, offset + 4))
-
-for ts, pkt in sniffer:
-    packet = Packet(sniffer, pkt, 1)
-'''
