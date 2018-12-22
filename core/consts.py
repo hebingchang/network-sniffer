@@ -29,11 +29,6 @@ def updateConsts():
     f.write(r.content)
     f.close()
 
-    r = requests.get('https://www.iana.org/assignments/tcp-parameters/tcp-parameters-2.csv')  # TCP 头部选项 14 Alternative Checksum Number
-    f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/tcp-parameters-2.csv', 'wb')
-    f.write(r.content)
-    f.close()
-
     r = requests.get('https://www.iana.org/assignments/icmp-parameters/icmp-parameters-types.csv')  # ICMP 类型
     f = open(os.path.dirname(os.path.abspath(__file__)) + '/ieee_standards/icmp-parameters-types.csv', 'wb')
     f.write(r.content)
